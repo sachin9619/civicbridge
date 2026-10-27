@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+  min-width: 320px;
+}
+
+img, video, svg {
+  max-width: 100%;
+  height: auto;
+}
+
 :root {
   --color-primary: #1e40af;
   --color-primary-light: #3b82f6;

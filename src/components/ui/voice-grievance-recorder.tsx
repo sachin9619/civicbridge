@@ -403,13 +403,13 @@ export function VoiceGrievanceRecorder({ onTranscriptProcessed }: VoiceGrievance
             </div>
 
             {/* Modal Actions */}
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={handleReset}
-                className="text-xs gap-1 text-slate-600"
+                className="text-xs gap-1 text-slate-600 justify-center"
               >
                 <RefreshCw className="h-3 w-3" /> साफ़ करें (Clear)
               </Button>
@@ -423,7 +423,7 @@ export function VoiceGrievanceRecorder({ onTranscriptProcessed }: VoiceGrievance
                     stopListening();
                     setIsOpen(false);
                   }}
-                  className="text-xs"
+                  className="text-xs flex-1 sm:flex-none justify-center"
                 >
                   रद्द करें
                 </Button>
@@ -432,7 +432,7 @@ export function VoiceGrievanceRecorder({ onTranscriptProcessed }: VoiceGrievance
                   size="sm"
                   onClick={handleApplyVoiceData}
                   disabled={!transcript.trim() && !interimTranscript.trim()}
-                  className="bg-[#046A38] hover:bg-[#03532c] text-white text-xs font-bold gap-1.5 shadow-xs"
+                  className="bg-[#046A38] hover:bg-[#03532c] text-white text-xs font-bold gap-1.5 shadow-xs flex-1 sm:flex-none justify-center"
                 >
                   <Check className="h-3.5 w-3.5" /> प्रपत्र में भरें (Apply to Form)
                 </Button>

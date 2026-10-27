@@ -78,7 +78,7 @@ export default function EmployeeDashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card className="border border-slate-200 bg-white shadow-xs">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-black text-blue-700">{activeTasks.length}</p>

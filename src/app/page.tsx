@@ -9,7 +9,7 @@ import {
   Building2, Search, ArrowRight, Shield, MapPin, Clock, CheckCircle2,
   Trash2, Construction, Lightbulb, Waves, Droplets, ChevronRight,
   Camera, FileText, Users, Eye, HelpCircle, Phone, Sparkles,
-  Calendar, Globe, ShieldAlert, ExternalLink, Trophy,
+  Calendar, Globe, ShieldAlert, ExternalLink, Trophy, Menu, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -22,6 +22,7 @@ export default function HomePage() {
   const [searchTrackingId, setSearchTrackingId] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [fontSizeLevel, setFontSizeLevel] = useState<"normal" | "large" | "xlarge">("normal");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +56,7 @@ export default function HomePage() {
             <span className="hidden sm:inline text-slate-300">Ministry of Housing & Urban Affairs (MoHUA)</span>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px]">
+          <div className="hidden sm:flex items-center gap-3 text-[11px]">
             <a href="#main-content" className="hover:underline text-slate-300 hover:text-white">
               Skip to main content
             </a>
@@ -103,7 +104,7 @@ export default function HomePage() {
 
       {/* 3. PRIMARY GOVERNMENT HEADER WITH NATIONAL EMBLEM & SEARCH */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           {/* National Emblem & Title */}
           <Link href="/" className="flex items-center gap-3 shrink-0">
             {/* Ashoka Stambh SVG */}
@@ -124,18 +125,18 @@ export default function HomePage() {
                   .gov.in
                 </span>
               </div>
-              <p className="text-[11px] font-semibold text-slate-700 leading-tight">
+              <p className="text-[11px] font-semibold text-slate-700 leading-tight hidden sm:block">
                 National Civic Grievance & Urban Governance Platform
               </p>
-              <p className="text-[10px] text-slate-500 font-medium">
+              <p className="text-[10px] text-slate-500 font-medium hidden sm:block">
                 राष्ट्रीय नागरिक सेवा एवं नगर प्रशासन पोर्टल
               </p>
             </div>
           </Link>
 
-          {/* Integrated Search Box (Reference Image style: Input + Category Select + Red Search Button) */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-xl w-full">
-            <div className="flex items-center rounded-lg border-2 border-slate-300 bg-white overflow-hidden shadow-xs focus-within:border-blue-700 transition-colors">
+          {/* Desktop: Integrated Search Box (Reference Image style: Input + Category Select + Red Search Button) */}
+          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl w-full">
+            <div className="flex items-center rounded-lg border-2 border-slate-300 bg-white overflow-hidden shadow-xs focus-within:border-blue-700 transition-colors w-full">
               <div className="pl-3 text-slate-400">
                 <Search className="h-4 w-4" />
               </div>
@@ -170,15 +171,15 @@ export default function HomePage() {
             </div>
           </form>
 
-          {/* Login / Portals Access Button */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Desktop: Login / Portals Access Buttons */}
+          <div className="hidden md:flex items-center gap-2 shrink-0">
             <LanguageSwitcher />
 
             <Link href="/wards">
               <Button
                 variant="outline"
                 size="sm"
-                className="border-amber-400 bg-amber-50/70 text-amber-900 hover:bg-amber-100 font-bold text-xs gap-1 hidden md:flex shadow-xs"
+                className="border-amber-400 bg-amber-50/70 text-amber-900 hover:bg-amber-100 font-bold text-xs gap-1 flex shadow-xs"
               >
                 <Trophy className="h-3.5 w-3.5 text-amber-600" />
                 {language === "hi" ? "स्वच्छ रैंकिंग" : language === "en" ? "Ward Scores" : "स्वच्छ रैंकिंग (Scores)"}
@@ -234,6 +235,116 @@ export default function HomePage() {
                 </Link>
               </>
             )}
+          </div>
+
+          {/* Mobile: Hamburger Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden flex items-center justify-center h-11 w-11 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+
+        {/* Mobile: Slide-down Drawer Menu */}
+        <div
+          className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+            mobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="px-4 pb-4 pt-2 space-y-3 border-t border-slate-100 bg-slate-50">
+            {/* Mobile Search */}
+            <form onSubmit={(e) => { handleSearch(e); setMobileMenuOpen(false); }} className="w-full">
+              <div className="flex items-center rounded-lg border-2 border-slate-300 bg-white overflow-hidden shadow-xs focus-within:border-blue-700 transition-colors">
+                <div className="pl-3 text-slate-400">
+                  <Search className="h-4 w-4" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search by Tracking ID, Ward..."
+                  value={searchTrackingId}
+                  onChange={(e) => setSearchTrackingId(e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm text-slate-900 focus:outline-none bg-transparent"
+                />
+                <button
+                  type="submit"
+                  className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white px-4 py-2.5 text-sm font-bold tracking-wide transition-colors shrink-0"
+                >
+                  Search
+                </button>
+              </div>
+            </form>
+
+            {/* Mobile Language Switcher */}
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+            </div>
+
+            {/* Mobile Action Buttons */}
+            <div className="flex flex-col gap-2">
+              <Link href="/wards" onClick={() => setMobileMenuOpen(false)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-amber-400 bg-amber-50/70 text-amber-900 hover:bg-amber-100 font-bold text-xs gap-1 flex justify-center shadow-xs min-h-[44px]"
+                >
+                  <Trophy className="h-3.5 w-3.5 text-amber-600" />
+                  {language === "hi" ? "स्वच्छ रैंकिंग" : language === "en" ? "Ward Scores" : "स्वच्छ रैंकिंग (Scores)"}
+                </Button>
+              </Link>
+
+              {user ? (
+                <>
+                  <Link
+                    href={
+                      profile?.role === "admin"
+                        ? "/admin"
+                        : profile?.role === "employee"
+                        ? "/employee"
+                        : "/dashboard"
+                    }
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-slate-300 text-slate-800 hover:bg-slate-100 font-bold text-xs shadow-xs min-h-[44px]"
+                    >
+                      {language === "hi" ? "डैशबोर्ड" : language === "en" ? "Dashboard" : "डैशबोर्ड | Dashboard"}
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/report" onClick={() => setMobileMenuOpen(false)}>
+                    <Button
+                      size="sm"
+                      className="w-full bg-[#002d62] hover:bg-[#001d42] text-white font-bold text-xs shadow-xs min-h-[44px]"
+                    >
+                      {language === "hi" ? "शिकायत दर्ज करें" : language === "en" ? "Lodge Grievance" : "शिकायत दर्ज करें (Lodge)"}
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-xs min-h-[44px]"
+                    >
+                      {language === "hi" ? "लॉग इन करें" : language === "en" ? "Sign In" : "लॉग इन | Sign In"}
+                    </Button>
+                  </Link>
+                  <Link href="/login?redirect=/dashboard/report" onClick={() => setMobileMenuOpen(false)}>
+                    <Button
+                      size="sm"
+                      className="w-full bg-[#002d62] hover:bg-[#001d42] text-white font-semibold text-xs shadow-xs min-h-[44px]"
+                    >
+                      {language === "hi" ? "शिकायत दर्ज करें" : language === "en" ? "Lodge Grievance" : "शिकायत दर्ज करें (Lodge)"}
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>

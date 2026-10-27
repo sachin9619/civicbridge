@@ -494,7 +494,7 @@ export default function ReportIssuePage() {
             {/* AI Auto-Triage Recommendation Card */}
             {aiSuggestion && (
               <div className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50/60 to-indigo-50/40 p-4 shadow-xs space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-purple-100">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-purple-100">
                   <div className="flex items-center gap-2">
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-600 text-white shadow-xs">
                       <Bot className="h-3.5 w-3.5" />
@@ -537,13 +537,13 @@ export default function ReportIssuePage() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between pt-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
                   <p className="text-[11px] text-slate-500">
                     {isTriageApplied
                       ? "✓ श्रेणी और प्राथमिकता लागू कर दी गई है।"
                       : "अनुशंसा लागू करने के लिए नीचे दिए बटन पर क्लिक करें।"}
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Button
                       type="button"
                       variant="ghost"
