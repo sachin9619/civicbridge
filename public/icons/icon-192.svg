@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#2563EB"/>
+  <path d="M96 40c-30.9 0-56 25.1-56 56s25.1 56 56 56 56-25.1 56-56-25.1-56-56-56zm0 8c26.5 0 48 21.5 48 48s-21.5 48-48 48-48-21.5-48-48 21.5-48 48-48z" fill="white" opacity="0.3"/>
+  <path d="M80 70v52l44-26z" fill="white"/>
+  <text x="96" y="148" text-anchor="middle" font-family="system-ui" font-weight="bold" font-size="16" fill="white">CB</text>
+</svg>

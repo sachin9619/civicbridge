@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#2563EB"/>
+  <rect x="140" y="140" width="232" height="232" rx="24" fill="white" opacity="0.15"/>
+  <path d="M256 160c-53 0-96 43-96 96s43 96 96 96 96-43 96-96-43-96-96-96zm-24 48h48v96h-48z" fill="white"/>
+  <circle cx="256" cy="224" r="16" fill="white"/>
+  <text x="256" y="400" text-anchor="middle" font-family="system-ui" font-weight="bold" font-size="40" fill="white">CivicBridge</text>
+</svg>
