@@ -111,7 +111,8 @@ export default function ComplaintDetailPage() {
         body: JSON.stringify({
           action,
           rating: action === "CONFIRM" ? rating : undefined,
-          feedback: feedback.trim() || undefined,
+          feedback: feedback.trim(),
+          feedbackNotes: feedback.trim(),
         }),
       });
 
@@ -293,10 +294,10 @@ export default function ComplaintDetailPage() {
             {/* Feedback textarea */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-slate-700 block">
-                नागरिक टिप्पणी (Feedback / Remarks):
+                नागरिक टिप्पणी (Feedback / Remarks - optional):
               </label>
               <Textarea
-                placeholder="कार्य की गुणवत्ता पर अपनी टिप्पणी लिखें..."
+                placeholder="टिप्पणी या कारण (वैकल्पिक / Optional)..."
                 rows={2}
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
@@ -425,3 +426,6 @@ export default function ComplaintDetailPage() {
     </div>
   );
 }
+
+
+

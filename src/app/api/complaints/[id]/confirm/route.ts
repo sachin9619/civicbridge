@@ -51,7 +51,8 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { action, rating = 5, feedbackNotes = "" } = body;
+    const { action, rating = 5, feedback = "", feedbackNotes = "" } = body;
+    const effectiveNotes = (feedback || feedbackNotes || "").trim();
 
     const now = new Date().toISOString();
 
@@ -71,7 +72,7 @@ export async function POST(
         old_status: comp.status,
         new_status: "RESOLVED",
         changed_by: user.id,
-        notes: `[Citizen Confirmed] Citizen verified resolution satisfaction rating: ${rating}/5 Stars. Feedback: "${feedbackNotes || "Resolution accepted."}"`,
+        notes: `[Citizen Confirmed] Citizen verified resolution satisfaction rating: ${rating}/5 Stars. Feedback: "${effectiveNotes || "Resolution accepted."}"`,
       });
 
       // Audit log
@@ -82,7 +83,7 @@ export async function POST(
         entity_id: complaintId,
         metadata: {
           rating,
-          feedbackNotes,
+          feedbackNotes: effectiveNotes,
           tracking_id: comp.tracking_id,
           confirmed_at: now,
         },
@@ -94,13 +95,8 @@ export async function POST(
         newStatus: "RESOLVED",
       });
     } else if (action === "DISPUTE") {
-      // Citizen disputes resolution — reopen complaint
-      if (!feedbackNotes || feedbackNotes.trim().length < 5) {
-        return NextResponse.json(
-          { error: "Please provide a brief reason explaining why the issue is still unresolved." },
-          { status: 400 }
-        );
-      }
+      // Citizen disputes resolution — reopen complaint directly without forcing brief reason
+      const disputeReason = effectiveNotes || "Issue reported as unresolved by citizen";
 
       await supabase
         .from("complaints")
@@ -116,7 +112,7 @@ export async function POST(
         old_status: comp.status,
         new_status: "REOPENED",
         changed_by: user.id,
-        notes: `[Citizen Dispute / Reopened] Citizen reported issue persists: "${feedbackNotes}". Priority elevated to HIGH.`,
+        notes: `[Citizen Dispute / Reopened] Citizen reported issue persists: "${disputeReason}". Priority elevated to HIGH.`,
       });
 
       // Audit log
@@ -126,7 +122,7 @@ export async function POST(
         entity_type: "complaint",
         entity_id: complaintId,
         metadata: {
-          feedbackNotes,
+          feedbackNotes: disputeReason,
           previous_status: comp.status,
           reopened_at: now,
         },
@@ -137,7 +133,7 @@ export async function POST(
         await supabase.from("notifications").insert({
           user_id: comp.assigned_employee_id,
           title: `🔄 Grievance Reopened: #${comp.tracking_id}`,
-          message: `The citizen was unsatisfied with the resolution proof: "${feedbackNotes}". Please re-inspect.`,
+          message: `The citizen was unsatisfied with the resolution proof: "${disputeReason}". Please re-inspect.`,
           type: "warning",
           complaint_id: complaintId,
         });
