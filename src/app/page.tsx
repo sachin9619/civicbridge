@@ -7,7 +7,7 @@ import {
   Building2, Search, ArrowRight, Shield, MapPin, Clock, CheckCircle2,
   Trash2, Construction, Lightbulb, Waves, Droplets, ChevronRight,
   Camera, FileText, Users, Eye, HelpCircle, Phone, Sparkles,
-  Calendar, Globe, ShieldAlert, Check, ExternalLink,
+  Calendar, Globe, ShieldAlert, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -609,111 +609,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 9. THREE-TIER PORTAL ACCESS (Citizen, Field Worker, Administration) */}
-      <section className="py-12 px-4 bg-white border-t border-slate-200">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              Integrated Governance Access Portals
-            </h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Dedicated interfaces for citizens, field ground personnel, and municipal commissioners.
-            </p>
-          </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Citizen Portal */}
-            <div className="border-2 border-blue-100 rounded-2xl p-6 bg-gradient-to-b from-blue-50/50 to-white flex flex-col justify-between hover:border-blue-300 transition-all">
-              <div className="space-y-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-600 text-white px-2 py-0.5 rounded">
-                  PORTAL 01
-                </span>
-                <h3 className="text-lg font-bold text-slate-900">Citizen Grievance Portal</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Lodge complaints with instant live camera snaps, get real-time SMS/web status alerts, and track work progress on interactive ward map.
-                </p>
-                <ul className="text-xs space-y-1.5 text-slate-600 pt-2 border-t border-slate-200/60">
-                  <li className="flex items-center gap-1.5">
-                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    Live Camera photo capture with GPS
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    AI Duplicate Complaint Proximity Alert
-                  </li>
-                </ul>
-              </div>
-              <div className="pt-6">
-                <Link href="/dashboard">
-                  <Button variant="primary" className="w-full bg-[#002d62] text-xs font-bold gap-1.5">
-                    Enter Citizen Dashboard <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
-            {/* Field Worker Portal */}
-            <div className="border-2 border-emerald-100 rounded-2xl p-6 bg-gradient-to-b from-emerald-50/50 to-white flex flex-col justify-between hover:border-emerald-300 transition-all">
-              <div className="space-y-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-700 text-white px-2 py-0.5 rounded">
-                  PORTAL 02
-                </span>
-                <h3 className="text-lg font-bold text-slate-900">Field Staff & Officer Portal</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Mobile-optimized workspace for on-ground municipal workers. View allocated work orders, navigate to complaint spot, and upload resolution proof.
-                </p>
-                <ul className="text-xs space-y-1.5 text-slate-600 pt-2 border-t border-slate-200/60">
-                  <li className="flex items-center gap-1.5">
-                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    AI Before-vs-After Resolution Audit
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    1-Click Work Status Update with Photo Proof
-                  </li>
-                </ul>
-              </div>
-              <div className="pt-6">
-                <Link href="/employee">
-                  <Button variant="outline" className="w-full border-emerald-600 text-emerald-800 hover:bg-emerald-50 text-xs font-bold gap-1.5">
-                    Worker Task Login <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
-            {/* Admin Command Center */}
-            <div className="border-2 border-purple-100 rounded-2xl p-6 bg-gradient-to-b from-purple-50/50 to-white flex flex-col justify-between hover:border-purple-300 transition-all">
-              <div className="space-y-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-700 text-white px-2 py-0.5 rounded">
-                  PORTAL 03
-                </span>
-                <h3 className="text-lg font-bold text-slate-900">Admin Command Center</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Municipal Corporation command cockpit. Live city grievance heatmap, departmental assignment, employee creation & full staff management suite.
-                </p>
-                <ul className="text-xs space-y-1.5 text-slate-600 pt-2 border-t border-slate-200/60">
-                  <li className="flex items-center gap-1.5">
-                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    Full Staff Roster (Add, Edit, Suspend, Delete)
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    Geospatial Heatmap with Privacy Shielding
-                  </li>
-                </ul>
-              </div>
-              <div className="pt-6">
-                <Link href="/admin">
-                  <Button variant="outline" className="w-full border-purple-700 text-purple-900 hover:bg-purple-50 text-xs font-bold gap-1.5">
-                    Commissioner Command Center <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* 10. OFFICIAL GOVERNMENT FOOTER (NIC / Digital India / Ministry Style) */}
       <footer className="bg-[#111827] text-slate-300 text-xs pt-12 pb-6 border-t-4 border-[#FF9933]">
