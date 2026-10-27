@@ -7,7 +7,7 @@ import {
   Building2, Search, ArrowRight, Shield, MapPin, Clock, CheckCircle2,
   Trash2, Construction, Lightbulb, Waves, Droplets, ChevronRight,
   Camera, FileText, Users, Eye, HelpCircle, Phone, Sparkles,
-  Calendar, Globe, ShieldAlert, ExternalLink,
+  Calendar, Globe, ShieldAlert, ExternalLink, Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -170,6 +170,16 @@ export default function HomePage() {
 
           {/* Login / Portals Access Button */}
           <div className="flex items-center gap-2 shrink-0">
+            <Link href="/wards">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-amber-400 bg-amber-50/70 text-amber-900 hover:bg-amber-100 font-bold text-xs gap-1 hidden sm:flex shadow-xs"
+              >
+                <Trophy className="h-3.5 w-3.5 text-amber-600" />
+                स्वच्छ वार्ड रैंकिंग (Scores)
+              </Button>
+            </Link>
             <Link href="/login">
               <Button
                 variant="outline"

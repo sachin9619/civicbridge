@@ -7,7 +7,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import {
   Building2, LayoutDashboard, FileText, PlusCircle, Users, Settings,
   LogOut, Menu, X, Bell, ClipboardList, MapPin, ChevronDown,
-  BarChart3, Shield, Briefcase, Calendar, ShieldCheck, Phone,
+  BarChart3, Shield, Briefcase, Calendar, ShieldCheck, Phone, Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ const citizenLinks = [
   { href: "/dashboard", label: "Dashboard", hindi: "डैशबोर्ड", icon: LayoutDashboard },
   { href: "/dashboard/report", label: "Lodge Grievance", hindi: "शिकायत दर्ज करें", icon: PlusCircle },
   { href: "/dashboard/complaints", label: "My Grievances", hindi: "मेरी शिकायतें", icon: FileText },
+  { href: "/wards", label: "Ward Scorecard", hindi: "स्वच्छता रैंकिंग", icon: Trophy },
   { href: "/dashboard/profile", label: "Citizen Profile", hindi: "नागरिक प्रोफ़ाइल", icon: Settings },
 ];
 
@@ -26,6 +27,7 @@ const adminLinks = [
   { href: "/admin/complaints", label: "All Grievances", hindi: "सभी शिकायतें", icon: FileText },
   { href: "/admin/assignments", label: "Work Allocation", hindi: "कार्य आवंटन", icon: ClipboardList },
   { href: "/admin/map", label: "Grievance Map", hindi: "मानचित्र", icon: MapPin },
+  { href: "/wards", label: "Ward Scorecard", hindi: "स्वच्छता रैंकिंग", icon: Trophy },
   { href: "/admin/departments", label: "Departments", hindi: "विभाग", icon: Building2 },
   { href: "/admin/employees", label: "Staff Roster", hindi: "कर्मचारी", icon: Users },
   { href: "/admin/analytics", label: "Analytics", hindi: "विश्लेषण", icon: BarChart3 },

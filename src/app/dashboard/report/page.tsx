@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { LiveCameraModal } from "@/components/ui/live-camera-modal";
+import { VoiceGrievanceRecorder } from "@/components/ui/voice-grievance-recorder";
 import type { DuplicateDetectionResult } from "@/lib/ai/gemini";
 
 export default function ReportIssuePage() {
@@ -333,6 +334,17 @@ export default function ReportIssuePage() {
           <span><strong>AI Scan Clean:</strong> No matching duplicate complaints found nearby. Your issue is unique.</span>
         </div>
       )}
+
+      {/* Voice-First Grievance Assistant (USP Feature) */}
+      <VoiceGrievanceRecorder
+        onTranscriptProcessed={({ title, description, category }) => {
+          setValue("title", title);
+          setValue("description", description);
+          if (category) {
+            setValue("category", category);
+          }
+        }}
+      />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Category */}
