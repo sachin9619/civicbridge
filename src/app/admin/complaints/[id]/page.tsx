@@ -259,33 +259,52 @@ export default function AdminComplaintDetailPage() {
         <ArrowLeft className="h-4 w-4" /> Back to complaints
       </button>
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="text-xs font-mono text-slate-400">{complaint.tracking_id}</span>
-            <StatusBadge status={complaint.status} />
-            <Badge variant={complaint.priority === "URGENT" ? "error" : complaint.priority === "HIGH" ? "warning" : "default"}>{complaint.priority}</Badge>
-            {complaint.is_sensitive && <Badge variant="error">SENSITIVE</Badge>}
+      {/* Official Government Dossier Header */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden">
+        <div className="h-1 w-full absolute top-0 left-0 bg-gradient-to-r from-[#FF671F] via-slate-200 to-[#046A38]" />
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
+                {complaint.tracking_id}
+              </span>
+              <StatusBadge status={complaint.status} />
+              <Badge variant={complaint.priority === "URGENT" ? "error" : complaint.priority === "HIGH" ? "warning" : "default"} className="font-bold">
+                {complaint.priority}
+              </Badge>
+              {complaint.is_sensitive && (
+                <span className="text-[10px] font-bold text-pink-700 bg-pink-50 border border-pink-200 px-2 py-0.5 rounded">
+                  गोपनीय / SENSITIVE
+                </span>
+              )}
+            </div>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">{complaint.title}</h1>
+            <p className="text-xs text-slate-500 mt-1">
+              पंजीकरण तिथि: {formatDate(complaint.created_at)} • नागरिक शिकायत डॉसियर
+            </p>
           </div>
-          <h1 className="text-xl font-bold text-slate-900">{complaint.title}</h1>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {/* AI Duplicate Scanner Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleScanDuplicates}
-            disabled={isScanningDuplicates}
-            className="gap-1.5 text-blue-700 border-blue-200 bg-blue-50/50 hover:bg-blue-100"
-          >
-            {isScanningDuplicates ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-blue-600" />}
-            AI Duplicate Scanner
-          </Button>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            {/* AI Duplicate Scanner Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleScanDuplicates}
+              disabled={isScanningDuplicates}
+              className="gap-1.5 text-blue-700 border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-xs font-semibold"
+            >
+              {isScanningDuplicates ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-blue-600" />}
+              AI Duplicate Scanner
+            </Button>
 
-          <Button variant="primary" size="sm" onClick={() => { setAssignDept(complaint.department_id || ""); setShowAssign(true); }}>
-            <UserCheck className="h-4 w-4" /> {complaint.assigned_employee_id ? "Reassign" : "Assign"}
-          </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => { setAssignDept(complaint.department_id || ""); setShowAssign(true); }}
+              className="gap-1.5 bg-[#002B49] hover:bg-[#00385f] text-xs font-semibold shadow-xs"
+            >
+              <UserCheck className="h-3.5 w-3.5" /> {complaint.assigned_employee_id ? "पुनः आवंटित करें (Reassign)" : "कार्य आवंटन (Assign)"}
+            </Button>
+          </div>
         </div>
       </div>
 

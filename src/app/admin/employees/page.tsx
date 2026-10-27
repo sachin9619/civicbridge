@@ -383,39 +383,48 @@ export default function AdminEmployeesPage() {
       )}
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <Users className="h-6 w-6 text-blue-600" />
-            Staff & Employee Management
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Provision, assign, update, and manage municipal field staff and administrative officers.
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchData(true)}
-            disabled={isRefreshing}
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              setAddSuccessInfo(null);
-              setIsAddOpen(true);
-            }}
-            className="gap-2 shadow-sm"
-          >
-            <UserPlus className="h-4 w-4" />
-            Add New Employee
-          </Button>
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden">
+        <div className="h-1 w-full absolute top-0 left-0 bg-gradient-to-r from-[#FF671F] via-slate-200 to-[#046A38]" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[11px] font-bold tracking-wider text-[#d32f2f] uppercase bg-red-50 border border-red-200 px-2 py-0.5 rounded">
+                कार्मिक एवं प्रशासन विभाग • MUNICIPAL CADRE
+              </span>
+              <span className="text-[11px] font-medium text-slate-500">अधिकारी एवं कर्मचारी प्रबंधन</span>
+            </div>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+              <Users className="h-6 w-6 text-[#002B49]" />
+              कर्मचारी एवं अधिकारी प्रबंधन <span className="text-slate-400 font-normal">|</span> Staff Directory
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              नगर निगम फील्ड स्टाफ, जोनल इंजीनियर्स एवं प्रशासनिक अधिकारियों का आवंटन एवं रोस्टर नियंत्रण
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchData(true)}
+              disabled={isRefreshing}
+              className="gap-2 bg-slate-50 border-slate-300 text-xs font-semibold"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+              ताज़ा करें (Refresh)
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setAddSuccessInfo(null);
+                setIsAddOpen(true);
+              }}
+              className="gap-2 shadow-xs bg-[#002B49] hover:bg-[#00385f] text-xs font-semibold"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              नया कर्मचारी जोड़ें | Add Employee
+            </Button>
+          </div>
         </div>
       </div>
 

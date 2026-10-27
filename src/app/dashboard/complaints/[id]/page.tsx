@@ -98,20 +98,35 @@ export default function ComplaintDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors">
-        <ArrowLeft className="h-4 w-4" /> Back
+      <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">
+        <ArrowLeft className="h-4 w-4" /> वापस जाएं | Back to Complaints
       </button>
 
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-mono text-slate-400">{complaint.tracking_id}</span>
-          <StatusBadge status={complaint.status} />
-          <Badge variant={complaint.priority === "URGENT" ? "error" : complaint.priority === "HIGH" ? "warning" : "default"}>
-            {complaint.priority}
-          </Badge>
+      {/* Official Government Complaint Dossier Header */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden">
+        <div className="h-1 w-full absolute top-0 left-0 bg-gradient-to-r from-[#FF671F] via-slate-200 to-[#046A38]" />
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
+                {complaint.tracking_id}
+              </span>
+              <StatusBadge status={complaint.status} />
+              <Badge variant={complaint.priority === "URGENT" ? "error" : complaint.priority === "HIGH" ? "warning" : "default"} className="font-bold">
+                {complaint.priority}
+              </Badge>
+              {complaint.is_sensitive && (
+                <span className="text-[10px] font-bold text-pink-700 bg-pink-50 border border-pink-200 px-2 py-0.5 rounded">
+                  गोपनीय / SENSITIVE
+                </span>
+              )}
+            </div>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">{complaint.title}</h1>
+            <p className="text-xs text-slate-500 mt-1">
+              पंजीकरण तिथि: {formatDate(complaint.created_at)} • MoHUA National Redressal Registry
+            </p>
+          </div>
         </div>
-        <h1 className="text-xl font-bold text-slate-900">{complaint.title}</h1>
       </div>
 
       {/* Details */}

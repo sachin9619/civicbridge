@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Building2, KeyRound, AlertTriangle } from "lucide-react";
+import { Eye, EyeOff, KeyRound, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { resetPasswordSchema, type ResetPasswordFormData } from "@/lib/validations";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -51,68 +51,105 @@ export default function ResetPasswordPage() {
 
   if (isValidSession === null) {
     return (
-      <>
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 text-slate-900">
-            <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center"><Building2 className="h-5 w-5 text-white" /></div>
-            <span className="text-xl font-bold tracking-tight">CivicBridge</span>
-          </div>
-        </div>
-        <Card><CardContent className="pt-6 text-center py-8">
-          <div className="animate-spin mx-auto mb-4 h-8 w-8 rounded-full border-2 border-slate-200 border-t-blue-600" />
-          <p className="text-sm text-slate-500">Verifying your reset link...</p>
-        </CardContent></Card>
-      </>
+      <Card className="border border-slate-200 shadow-xl overflow-hidden rounded-2xl bg-white">
+        <CardContent className="pt-8 pb-8 text-center space-y-3">
+          <div className="animate-spin mx-auto h-8 w-8 rounded-full border-2 border-slate-200 border-t-[#002d62]" />
+          <p className="text-xs font-semibold text-slate-700">Verifying secure authentication link...</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (isValidSession === false) {
     return (
-      <>
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-slate-900 hover:opacity-80 transition-opacity">
-            <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center"><Building2 className="h-5 w-5 text-white" /></div>
-            <span className="text-xl font-bold tracking-tight">CivicBridge</span>
-          </Link>
-        </div>
-        <Card><CardContent className="pt-6 text-center">
-          <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center"><AlertTriangle className="h-6 w-6 text-amber-600" /></div>
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">Invalid or expired link</h2>
-          <p className="text-sm text-slate-500 mb-6">This password reset link is invalid or has expired.</p>
-          <Link href="/forgot-password"><Button variant="primary" className="w-full">Request new reset link</Button></Link>
-        </CardContent></Card>
-      </>
+      <Card className="border border-slate-200 shadow-xl overflow-hidden rounded-2xl bg-white">
+        <CardContent className="pt-8 pb-8 text-center space-y-3">
+          <div className="mx-auto h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center">
+            <AlertTriangle className="h-6 w-6 text-amber-700" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900">Expired or Invalid Link</h2>
+          <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+            This password recovery link has either expired or has already been used. Please request a new recovery link.
+          </p>
+          <div className="pt-2">
+            <Link href="/forgot-password">
+              <Button variant="primary" className="w-full bg-[#002d62] text-xs font-bold">
+                Request New Recovery Link
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <>
-      <div className="text-center mb-8">
-        <Link href="/" className="inline-flex items-center gap-2 text-slate-900 hover:opacity-80 transition-opacity">
-          <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center"><Building2 className="h-5 w-5 text-white" /></div>
-          <span className="text-xl font-bold tracking-tight">CivicBridge</span>
-        </Link>
+    <Card className="border border-slate-200 shadow-xl overflow-hidden rounded-2xl bg-white">
+      <div className="h-1 w-full flex">
+        <div className="h-full w-1/3 bg-[#FF9933]" />
+        <div className="h-full w-1/3 bg-white" />
+        <div className="h-full w-1/3 bg-[#138808]" />
       </div>
-      <Card>
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-2 h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center"><KeyRound className="h-6 w-6 text-blue-600" /></div>
-          <CardTitle className="text-xl">Set new password</CardTitle>
-          <CardDescription>Choose a strong new password for your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error && <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700" role="alert">{error}</div>}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="relative">
-              <Input label="New password" type={showPassword ? "text" : "password"} placeholder="Enter new password" autoComplete="new-password" hint="At least 8 characters with uppercase, lowercase, and a number" error={errors.password?.message} {...register("password")} />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 transition-colors" aria-label={showPassword ? "Hide password" : "Show password"}>
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            <Input label="Confirm new password" type="password" placeholder="Confirm new password" autoComplete="new-password" error={errors.confirm_password?.message} {...register("confirm_password")} />
-            <Button type="submit" variant="primary" className="w-full" isLoading={isLoading}>Reset password</Button>
-          </form>
-        </CardContent>
-      </Card>
-    </>
+
+      <CardHeader className="text-center pb-3 pt-6">
+        <div className="mx-auto mb-2 h-10 w-10 rounded-full bg-blue-50 text-blue-800 flex items-center justify-center border border-blue-100">
+          <KeyRound className="h-5 w-5" />
+        </div>
+        <CardTitle className="text-xl font-black text-slate-900">
+          नया पासवर्ड बनाएं
+        </CardTitle>
+        <p className="text-xs font-semibold text-slate-600">Create New Portal Password</p>
+        <CardDescription className="text-xs text-slate-500 mt-1">
+          Set a secure password for your CivicBridge government account.
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="pt-2">
+        {error && (
+          <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-800 font-medium">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="relative">
+            <Input
+              label="New Password *"
+              type={showPassword ? "text" : "password"}
+              placeholder="Min. 8 characters"
+              autoComplete="new-password"
+              hint="Must contain uppercase, lowercase, and a number"
+              error={errors.password?.message}
+              {...register("password")}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+
+          <Input
+            label="Confirm New Password *"
+            type="password"
+            placeholder="Re-enter your new password"
+            autoComplete="new-password"
+            error={errors.confirm_password?.message}
+            {...register("confirm_password")}
+          />
+
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-full bg-[#002d62] hover:bg-[#001d42] text-white font-bold text-xs py-2.5 shadow-sm"
+            isLoading={isLoading}
+          >
+            Update Account Password
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

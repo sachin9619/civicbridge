@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { FileText, Search, PlusCircle } from "lucide-react";
+import { FileText, Search, PlusCircle, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -46,39 +45,69 @@ export default function ComplaintsListPage() {
     setFiltered(result);
   }, [search, statusFilter, complaints]);
 
-  const statuses = ["ALL", "SUBMITTED", "UNDER_REVIEW", "ASSIGNED", "IN_PROGRESS", "PENDING_VERIFICATION", "RESOLVED", "REJECTED"];
+  const statuses = [
+    { key: "ALL", label: "सभी / All" },
+    { key: "SUBMITTED", label: "दर्ज / Submitted" },
+    { key: "UNDER_REVIEW", label: "समीक्षाधीन / Review" },
+    { key: "ASSIGNED", label: "आवंटित / Assigned" },
+    { key: "IN_PROGRESS", label: "प्रगति पर / Active" },
+    { key: "PENDING_VERIFICATION", label: "सत्यापन / Verifying" },
+    { key: "RESOLVED", label: "निस्तारित / Resolved" },
+    { key: "REJECTED", label: "अस्वीकृत / Rejected" },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-xl font-bold text-slate-900">My Complaints</h1>
-        <Link href="/dashboard/report">
-          <Button variant="primary" size="sm"><PlusCircle className="h-4 w-4" /> Report Issue</Button>
-        </Link>
+      {/* Official Government Header Banner */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden">
+        <div className="h-1 w-full absolute top-0 left-0 bg-gradient-to-r from-[#FF671F] via-slate-200 to-[#046A38]" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[11px] font-bold tracking-wider text-[#d32f2f] uppercase bg-red-50 border border-red-200 px-2 py-0.5 rounded">
+                नागरिक निवारण रिकॉर्ड
+              </span>
+              <span className="text-[11px] font-medium text-slate-500">Citizen Redressal Dossier</span>
+            </div>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
+              मेरी पंजीकृत शिकायतें <span className="text-slate-400 font-normal">|</span> My Registered Complaints
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              आपके द्वारा दर्ज की गई सभी शिकायतों की वास्तविक समय स्थिति एवं इतिहास
+            </p>
+          </div>
+          <Link href="/dashboard/report">
+            <Button variant="primary" size="sm" className="bg-[#002B49] hover:bg-[#00385f] shadow-xs gap-1.5 shrink-0">
+              <PlusCircle className="h-4 w-4" /> नई शिकायत दर्ज करें
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search complaints..."
+            placeholder="शिकायत शीर्षक या ट्रैकिंग आईडी खोजें (Search)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-9 pr-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full h-10 pl-10 pr-3 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#002B49] bg-white shadow-xs"
           />
         </div>
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 items-center">
           {statuses.map((s) => (
             <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                statusFilter === s ? "bg-blue-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+              key={s.key}
+              onClick={() => setStatusFilter(s.key)}
+              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                statusFilter === s.key
+                  ? "bg-[#002B49] text-white shadow-xs"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
               }`}
             >
-              {s === "ALL" ? "All" : s.replace(/_/g, " ")}
+              {s.label}
             </button>
           ))}
         </div>
@@ -90,27 +119,45 @@ export default function ComplaintsListPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title={search || statusFilter !== "ALL" ? "No matching complaints" : "No complaints yet"}
-          description={search || statusFilter !== "ALL" ? "Try adjusting your search or filters." : "Report your first civic issue to get started."}
+          title={search || statusFilter !== "ALL" ? "कोई मेल खाती शिकायत नहीं मिली" : "कोई शिकायत दर्ज नहीं है"}
+          description={search || statusFilter !== "ALL" ? "कृपया अपनी खोज या फ़िल्टर मानदंड बदलें।" : "शहरी समस्या के समाधान हेतु अपनी पहली शिकायत दर्ज करें।"}
           action={!search && statusFilter === "ALL" ? (
-            <Link href="/dashboard/report"><Button variant="primary" size="sm"><PlusCircle className="h-4 w-4" /> Report Issue</Button></Link>
+            <Link href="/dashboard/report">
+              <Button variant="primary" size="sm" className="bg-[#002B49] hover:bg-[#00385f]">
+                <PlusCircle className="h-4 w-4" /> नई शिकायत दर्ज करें
+              </Button>
+            </Link>
           ) : undefined}
         />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {filtered.map((c) => (
             <Link key={c.id} href={`/dashboard/complaints/${c.id}`}>
-              <Card className="hover:border-blue-200 hover:shadow-sm transition-all cursor-pointer">
+              <Card className="hover:border-blue-300 hover:shadow-md transition-all cursor-pointer bg-white border-slate-200 group">
                 <CardContent className="p-4 flex items-center justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-mono text-slate-400">{c.tracking_id}</span>
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                      <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        {c.tracking_id}
+                      </span>
                       <StatusBadge status={c.status} />
+                      {c.is_sensitive && (
+                        <span className="text-[10px] font-bold text-pink-700 bg-pink-50 border border-pink-200 px-1.5 py-0.5 rounded">
+                          गोपनीय / Sensitive
+                        </span>
+                      )}
                     </div>
-                    <p className="text-sm font-medium text-slate-900 truncate">{c.title}</p>
+                    <p className="text-sm font-bold text-slate-900 truncate group-hover:text-blue-700 transition-colors">
+                      {c.title}
+                    </p>
                     <p className="text-xs text-slate-500 mt-0.5 truncate">{c.description}</p>
                   </div>
-                  <span className="text-xs text-slate-400 shrink-0">{formatRelativeTime(c.created_at)}</span>
+                  <div className="text-right shrink-0">
+                    <span className="text-xs text-slate-400 block">{formatRelativeTime(c.created_at)}</span>
+                    <span className="text-xs font-semibold text-blue-600 flex items-center gap-0.5 justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      विवरण <ArrowUpRight className="h-3 w-3" />
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             </Link>

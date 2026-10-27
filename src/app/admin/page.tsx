@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
   FileText, Clock, CheckCircle2, AlertCircle, Users, BarChart3,
-  ArrowUpRight, TrendingUp, AlertTriangle, UserCheck,
+  ArrowUpRight, TrendingUp, AlertTriangle, UserCheck, Shield, Building2, MapPin
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -72,84 +72,136 @@ export default function AdminDashboardPage() {
     return (
       <div className="text-center py-12">
         <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto mb-3" />
-        <h2 className="text-lg font-semibold text-slate-900">Access Denied</h2>
-        <p className="text-sm text-slate-500 mt-1">You need admin privileges to access this page.</p>
+        <h2 className="text-lg font-semibold text-slate-900">अनधिकृत पहुँच | Access Denied</h2>
+        <p className="text-sm text-slate-500 mt-1">You need administrative authority to access the Municipal Command Center.</p>
       </div>
     );
   }
 
   const kpis = [
-    { label: "Total Complaints", value: stats?.total, icon: FileText, color: "text-blue-600 bg-blue-50" },
-    { label: "Awaiting Review", value: (stats?.submitted || 0) + (stats?.underReview || 0), icon: Clock, color: "text-amber-600 bg-amber-50" },
-    { label: "Assigned / In Progress", value: (stats?.assigned || 0) + (stats?.inProgress || 0), icon: UserCheck, color: "text-purple-600 bg-purple-50" },
-    { label: "Pending Verification", value: stats?.pendingVerification, icon: AlertCircle, color: "text-orange-600 bg-orange-50" },
-    { label: "Resolved", value: stats?.resolved, icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50" },
-    { label: "Rejected", value: stats?.rejected, icon: AlertTriangle, color: "text-red-600 bg-red-50" },
+    { labelHi: "कुल शिकायतें", labelEn: "Total Complaints", value: stats?.total, icon: FileText, color: "text-blue-700 bg-blue-50 border-l-4 border-l-blue-600" },
+    { labelHi: "समीक्षाधीन", labelEn: "Awaiting Review", value: (stats?.submitted || 0) + (stats?.underReview || 0), icon: Clock, color: "text-amber-700 bg-amber-50 border-l-4 border-l-amber-500" },
+    { labelHi: "आवंटित / प्रगति पर", labelEn: "Assigned / Active", value: (stats?.assigned || 0) + (stats?.inProgress || 0), icon: UserCheck, color: "text-purple-700 bg-purple-50 border-l-4 border-l-purple-600" },
+    { labelHi: "सत्यापन लंबित", labelEn: "Pending Verification", value: stats?.pendingVerification, icon: AlertCircle, color: "text-orange-700 bg-orange-50 border-l-4 border-l-orange-500" },
+    { labelHi: "सत्यापित एवं निस्तारित", labelEn: "Resolved / Closed", value: stats?.resolved, icon: CheckCircle2, color: "text-emerald-700 bg-emerald-50 border-l-4 border-l-emerald-600" },
+    { labelHi: "अस्वीकृत", labelEn: "Rejected / Invalid", value: stats?.rejected, icon: AlertTriangle, color: "text-red-700 bg-red-50 border-l-4 border-l-red-600" },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Admin Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Overview of civic complaints and operations</p>
+      {/* Official Government Admin Cockpit Header */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden">
+        <div className="h-1 w-full absolute top-0 left-0 bg-gradient-to-r from-[#FF671F] via-slate-200 to-[#046A38]" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="h-11 w-11 rounded-lg bg-[#002B49] text-white flex items-center justify-center font-bold text-lg shadow-xs shrink-0">
+              <Building2 className="h-6 w-6 text-amber-300" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold tracking-wider text-[#d32f2f] uppercase bg-red-50 border border-red-200 px-2 py-0.5 rounded">
+                  भारत सरकार • GOI MUNICIPAL ERP
+                </span>
+                <span className="text-[11px] font-medium text-slate-500">वार्ड संचालन नियंत्रण</span>
+              </div>
+              <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight mt-0.5">
+                कमान एवं नियंत्रण केंद्र <span className="text-slate-400 font-normal">|</span> Command & Control Center
+              </h1>
+              <p className="text-xs text-slate-500 mt-0.5">
+                राष्ट्रीय नागरिक शिकायत निवारण एवं शहरी शासन प्रबंधन • MoHUA Integrated Governance Grid
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/admin/map"
+              className="text-xs font-semibold px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center gap-1.5 transition-colors"
+            >
+              <MapPin className="h-3.5 w-3.5 text-blue-600" />
+              स्थानिक हीटमैप (GIS)
+            </Link>
+            <Link
+              href="/admin/complaints"
+              className="text-xs font-semibold px-3.5 py-2 rounded-lg bg-[#002B49] hover:bg-[#00385f] text-white flex items-center gap-1.5 shadow-xs transition-colors"
+            >
+              सभी शिकायतें देखें
+              <ArrowUpRight className="h-3.5 w-3.5 text-amber-300" />
+            </Link>
+          </div>
         </div>
-        <Link href="/admin/complaints">
-          <button className="text-sm text-blue-600 hover:underline flex items-center gap-1">
-            View all <ArrowUpRight className="h-3.5 w-3.5" />
-          </button>
-        </Link>
       </div>
 
       {/* AI Copilot Panel */}
       <AdminAICopilot context={{ intent: "analytics" }} />
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* KPIs with Government Bilingual Styling */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
         {kpis.map((kpi) => (
-          <Card key={kpi.label}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-500 leading-tight">{kpi.label}</p>
-                  {isLoading ? (
-                    <Skeleton className="h-7 w-12 mt-1.5" />
-                  ) : (
-                    <p className="text-2xl font-bold text-slate-900 mt-1">{kpi.value}</p>
-                  )}
-                </div>
-                <div className={`rounded-lg p-2 ${kpi.color}`}>
-                  <kpi.icon className="h-4 w-4" />
-                </div>
+          <div key={kpi.labelEn} className={`bg-white rounded-xl p-3.5 border border-slate-200 shadow-xs ${kpi.color}`}>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold text-slate-700 leading-tight">{kpi.labelHi}</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider">{kpi.labelEn}</p>
+                {isLoading ? (
+                  <Skeleton className="h-7 w-12 mt-2" />
+                ) : (
+                  <p className="text-2xl font-bold text-slate-900 mt-1.5 font-mono">{kpi.value ?? 0}</p>
+                )}
               </div>
-            </CardContent>
-          </Card>
+              <div className="rounded-md p-1.5 bg-white/80 shadow-xs">
+                <kpi.icon className="h-4 w-4 text-slate-700" />
+              </div>
+            </div>
+          </div>
         ))}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Recent Complaints */}
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent Complaints</CardTitle>
-              <Link href="/admin/complaints" className="text-sm text-blue-600 hover:underline">View all</Link>
+          <Card className="border-slate-200 bg-white shadow-xs">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900">
+                  हालिया पंजीकृत शिकायतें <span className="text-xs text-slate-500 font-normal">| Recent Complaints Dossier</span>
+                </CardTitle>
+                <p className="text-xs text-slate-500 mt-0.5">Real-time civic grievances awaiting municipal adjudication</p>
+              </div>
+              <Link href="/admin/complaints" className="text-xs font-semibold text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1">
+                पूर्ण सूची <ArrowUpRight className="h-3 w-3" />
+              </Link>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-3">
               {isLoading ? (
                 <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
               ) : recentComplaints.length === 0 ? (
-                <p className="text-sm text-slate-500 text-center py-6">No complaints recorded yet.</p>
+                <p className="text-sm text-slate-500 text-center py-8">कोई सक्रिय शिकायत दर्ज नहीं है | No complaints recorded yet.</p>
               ) : (
                 <div className="divide-y divide-slate-100">
                   {recentComplaints.map((c) => (
-                    <Link key={c.id} href={`/admin/complaints/${c.id}`} className="flex items-center justify-between py-3 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition-colors">
+                    <Link
+                      key={c.id}
+                      href={`/admin/complaints/${c.id}`}
+                      className="flex items-center justify-between py-3 hover:bg-slate-50/80 -mx-2 px-3 rounded-lg transition-colors group"
+                    >
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-slate-900 truncate">{c.title}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs font-mono text-slate-400">{c.tracking_id}</span>
-                          <span className="text-xs text-slate-400">{formatRelativeTime(c.created_at)}</span>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[11px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                            {c.tracking_id}
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-medium">
+                            {formatRelativeTime(c.created_at)}
+                          </span>
+                          {c.is_sensitive && (
+                            <span className="text-[10px] font-bold text-pink-700 bg-pink-50 border border-pink-200 px-1.5 rounded">
+                              गोपनीय
+                            </span>
+                          )}
                         </div>
+                        <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-blue-700 transition-colors">
+                          {c.title}
+                        </p>
                       </div>
                       <StatusBadge status={c.status} className="ml-3 shrink-0" />
                     </Link>
@@ -161,33 +213,39 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Category Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>By Category</CardTitle>
+        <Card className="border-slate-200 bg-white shadow-xs">
+          <CardHeader className="pb-3 border-b border-slate-100">
+            <CardTitle className="text-base font-bold text-slate-900">
+              श्रेणीवार वितरण <span className="text-xs text-slate-500 font-normal">| By Category</span>
+            </CardTitle>
+            <p className="text-xs text-slate-500 mt-0.5">Distribution across urban departments</p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             {isLoading ? (
               <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
             ) : Object.keys(categoryStats).length === 0 ? (
-              <p className="text-sm text-slate-500 text-center py-4">No data yet.</p>
+              <p className="text-sm text-slate-500 text-center py-6">कोई डेटा उपलब्ध नहीं | No data yet.</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 {Object.entries(categoryStats)
                   .sort(([, a], [, b]) => b - a)
-                  .map(([cat, count]) => (
-                    <div key={cat} className="flex items-center justify-between">
-                      <span className="text-sm text-slate-700">{cat.replace(/_/g, " ")}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-2 rounded-full bg-slate-100 overflow-hidden">
+                  .map(([cat, count]) => {
+                    const pct = Math.round((count / (stats?.total || 1)) * 100);
+                    return (
+                      <div key={cat} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs font-medium">
+                          <span className="text-slate-700 capitalize">{cat.replace(/_/g, " ").toLowerCase()}</span>
+                          <span className="text-slate-500 font-mono">{count} ({pct}%)</span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-blue-500"
-                            style={{ width: `${(count / (stats?.total || 1)) * 100}%` }}
+                            className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                            style={{ width: `${pct}%` }}
                           />
                         </div>
-                        <span className="text-xs font-medium text-slate-500 w-6 text-right">{count}</span>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             )}
           </CardContent>

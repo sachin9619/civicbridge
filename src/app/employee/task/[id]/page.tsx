@@ -188,19 +188,32 @@ export default function EmployeeTaskDetailPage() {
   const rejectedEvidence = evidence.filter((e) => e.is_approved === false);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700">
-        <ArrowLeft className="h-4 w-4" /> Back
+    <div className="max-w-3xl mx-auto space-y-6">
+      <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800">
+        <ArrowLeft className="h-4 w-4" /> कार्य सूची पर वापस जाएं | Back to Task Roster
       </button>
 
-      {/* Header */}
-      <div>
-        <div className="flex flex-wrap items-center gap-2 mb-2">
-          <StatusBadge status={complaint.status} />
-          <Badge variant={complaint.priority === "URGENT" ? "error" : complaint.priority === "HIGH" ? "warning" : "default"}>{complaint.priority}</Badge>
+      {/* Official Municipal Work Order Header */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden">
+        <div className="h-1 w-full absolute top-0 left-0 bg-gradient-to-r from-[#FF671F] via-slate-200 to-[#046A38]" />
+        <div>
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
+              {complaint.tracking_id}
+            </span>
+            <StatusBadge status={complaint.status} />
+            <Badge variant={complaint.priority === "URGENT" ? "error" : complaint.priority === "HIGH" ? "warning" : "default"} className="font-bold">
+              {complaint.priority}
+            </Badge>
+            <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+              फील्ड कार्य आदेश • FIELD WORK ORDER
+            </span>
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">{complaint.title}</h1>
+          <p className="text-xs text-slate-500 mt-1">
+            आवंटन संदर्भ: MoHUA Field Action Grid • समाधान हेतु GPS एवं साक्ष्य अनिवार्य
+          </p>
         </div>
-        <h1 className="text-xl font-bold text-slate-900">{complaint.title}</h1>
-        <span className="text-xs font-mono text-slate-400">{complaint.tracking_id}</span>
       </div>
 
       {/* AI Field Assistant */}

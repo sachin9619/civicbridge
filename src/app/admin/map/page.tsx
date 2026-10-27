@@ -45,35 +45,49 @@ export default function AdminMapPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Geographic Heatmap & Incidents</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Real-time geospatial visualization of reported civic issues across city wards
-          </p>
-        </div>
-        <div className="flex items-center gap-3 text-xs text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-xs">
-          <span className="flex items-center gap-1 font-medium text-slate-900">
-            <Layers className="h-3.5 w-3.5 text-blue-600" />
-            {complaintsWithLocation.length} Mapped Pins
-          </span>
-          {sensitiveHiddenCount > 0 && (
-            <span className="flex items-center gap-1 text-pink-600 font-medium">
-              <ShieldAlert className="h-3.5 w-3.5" />
-              {sensitiveHiddenCount} Sensitive Restricted
+      {/* Official Government GIS Header */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden">
+        <div className="h-1 w-full absolute top-0 left-0 bg-gradient-to-r from-[#FF671F] via-slate-200 to-[#046A38]" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[11px] font-bold tracking-wider text-[#d32f2f] uppercase bg-red-50 border border-red-200 px-2 py-0.5 rounded">
+                राष्ट्रीय भू-स्थानिक पोर्टल • GIS GRID
+              </span>
+              <span className="text-[11px] font-medium text-slate-500">वार्ड स्थानिक विश्लेषण</span>
+            </div>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
+              भू-स्थानिक हीटमैप एवं घटना मानचित्र <span className="text-slate-400 font-normal">|</span> GIS Operations Grid
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              नगर निगम वार्डों में वास्तविक समय पर नागरिक समस्याओं का उपग्रह व मानचित्र आधारित स्थानिक दृश्य
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5 text-xs bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-lg shadow-xs shrink-0">
+            <span className="flex items-center gap-1.5 font-bold text-[#002B49]">
+              <Layers className="h-4 w-4 text-blue-600" />
+              {complaintsWithLocation.length} सक्रिय पिन
             </span>
-          )}
+            {sensitiveHiddenCount > 0 && (
+              <span className="flex items-center gap-1 text-pink-700 font-semibold border-l border-slate-300 pl-2.5">
+                <ShieldAlert className="h-3.5 w-3.5" />
+                {sensitiveHiddenCount} गोपनीय
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">City Operational Map</CardTitle>
+      <Card className="border-slate-200 bg-white shadow-xs">
+        <CardHeader className="pb-3 border-b border-slate-100">
+          <CardTitle className="text-base font-bold text-slate-900">
+            शहरी परिचालन मानचित्र <span className="text-xs text-slate-500 font-normal">| City Operational GIS</span>
+          </CardTitle>
           <CardDescription>
             Click markers to inspect complaint references, live status, and jump straight to resolution assignment.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           {isLoading ? (
             <Skeleton className="w-full h-[520px] rounded-xl" />
           ) : (

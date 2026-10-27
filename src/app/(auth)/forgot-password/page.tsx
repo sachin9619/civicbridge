@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Building2, Mail } from "lucide-react";
+import { ArrowLeft, Mail, KeyRound } from "lucide-react";
 import { forgotPasswordSchema, type ForgotPasswordFormData } from "@/lib/validations";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -35,38 +35,73 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <>
-      <div className="text-center mb-8">
-        <Link href="/" className="inline-flex items-center gap-2 text-slate-900 hover:opacity-80 transition-opacity">
-          <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center"><Building2 className="h-5 w-5 text-white" /></div>
-          <span className="text-xl font-bold tracking-tight">CivicBridge</span>
-        </Link>
+    <Card className="border border-slate-200 shadow-xl overflow-hidden rounded-2xl bg-white">
+      <div className="h-1 w-full flex">
+        <div className="h-full w-1/3 bg-[#FF9933]" />
+        <div className="h-full w-1/3 bg-white" />
+        <div className="h-full w-1/3 bg-[#138808]" />
       </div>
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-xl">{isSubmitted ? "Check your email" : "Forgot password"}</CardTitle>
-          <CardDescription>{isSubmitted ? "If an account exists with that email, we've sent a password reset link." : "Enter your email and we'll send you a reset link"}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isSubmitted ? (
-            <div className="text-center">
-              <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center"><Mail className="h-6 w-6 text-blue-600" /></div>
-              <p className="text-sm text-slate-500 mb-6">Check your inbox and follow the instructions. The link expires in 24 hours.</p>
-              <Link href="/login"><Button variant="outline" className="w-full"><ArrowLeft className="h-4 w-4" /> Back to sign in</Button></Link>
+
+      <CardHeader className="text-center pb-3 pt-6">
+        <div className="mx-auto mb-2 h-10 w-10 rounded-full bg-blue-50 text-blue-800 flex items-center justify-center border border-blue-100">
+          <KeyRound className="h-5 w-5" />
+        </div>
+        <CardTitle className="text-xl font-black text-slate-900">
+          पासवर्ड रीसेट अनुरोध
+        </CardTitle>
+        <p className="text-xs font-semibold text-slate-600">Password Recovery Gateway</p>
+        <CardDescription className="text-xs text-slate-500 mt-1">
+          {isSubmitted
+            ? "An official password reset link has been dispatched to your registered address."
+            : "Enter your registered email address to receive secure password recovery instructions."}
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="pt-2">
+        {isSubmitted ? (
+          <div className="text-center space-y-4 py-2">
+            <div className="mx-auto h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+              <Mail className="h-6 w-6 text-blue-800" />
             </div>
-          ) : (
-            <>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <Input label="Email address" type="email" placeholder="you@example.com" autoComplete="email" error={errors.email?.message} {...register("email")} />
-                <Button type="submit" variant="primary" className="w-full" isLoading={isLoading}>Send reset link</Button>
-              </form>
-              <div className="mt-4 text-center">
-                <Link href="/login" className="text-sm text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"><ArrowLeft className="h-3 w-3" /> Back to sign in</Link>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-sm mx-auto">
+              Please check your inbox and click the authentication link. For security, this link expires in 24 hours.
+            </p>
+            <div className="pt-2">
+              <Link href="/login">
+                <Button variant="outline" className="w-full text-xs font-bold gap-1.5 border-slate-300">
+                  <ArrowLeft className="h-3.5 w-3.5" /> Return to Sign In
+                </Button>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <Input
+                label="Registered Email Address *"
+                type="email"
+                placeholder="citizen@example.com"
+                autoComplete="email"
+                error={errors.email?.message}
+                {...register("email")}
+              />
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full bg-[#002d62] hover:bg-[#001d42] text-white font-bold text-xs py-2.5 shadow-sm"
+                isLoading={isLoading}
+              >
+                Send Secure Reset Link
+              </Button>
+            </form>
+            <div className="mt-4 text-center">
+              <Link href="/login" className="text-xs text-blue-800 hover:text-blue-900 font-bold hover:underline inline-flex items-center gap-1">
+                <ArrowLeft className="h-3 w-3" /> Back to Sign In
+              </Link>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

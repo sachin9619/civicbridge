@@ -257,23 +257,34 @@ export default function ReportIssuePage() {
   if (success) {
     return (
       <div className="max-w-lg mx-auto">
-        <Card>
+        <Card className="border-slate-200 bg-white shadow-md relative overflow-hidden">
+          <div className="h-1.5 w-full bg-gradient-to-r from-[#FF671F] via-slate-200 to-[#046A38]" />
           <CardContent className="pt-8 pb-8 text-center">
-            <div className="mx-auto mb-4 h-14 w-14 rounded-full bg-emerald-100 flex items-center justify-center">
-              <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-emerald-100 border-2 border-emerald-300 flex items-center justify-center shadow-xs">
+              <CheckCircle2 className="h-9 w-9 text-emerald-600" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Complaint Submitted!</h2>
-            <p className="text-sm text-slate-500 mb-4">Your complaint has been recorded and will be reviewed shortly.</p>
-            <div className="bg-slate-50 rounded-lg p-4 mb-6">
-              <p className="text-xs text-slate-500 mb-1">Tracking Reference</p>
-              <p className="text-lg font-mono font-bold text-blue-600">{success.trackingId}</p>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold mb-2">
+              भारत सरकार • आधिकारिक शिकायत पावती
             </div>
-            <div className="flex flex-col gap-2">
-              <Button variant="primary" onClick={() => router.push("/dashboard/complaints")} className="w-full">
-                View My Complaints
+            <h2 className="text-xl font-bold text-slate-900 mb-1">शिकायत सफलतापूर्वक दर्ज की गई</h2>
+            <p className="text-sm font-medium text-slate-700 mb-1">Grievance Registered Successfully</p>
+            <p className="text-xs text-slate-500 mb-6">Your civic grievance has been logged into the national registry and dispatched to the designated municipal authority.</p>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 text-left">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200 mb-2">
+                <span className="text-xs font-medium text-slate-500">पावती / Tracking ID</span>
+                <span className="text-[11px] font-bold text-[#046A38] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">256-Bit SSL Logged</span>
+              </div>
+              <p className="text-xl font-mono font-bold text-[#002B49] text-center py-1">{success.trackingId}</p>
+              <p className="text-[11px] text-slate-500 text-center mt-1">Please save this tracking ID for SMS / WhatsApp status updates.</p>
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              <Button variant="primary" onClick={() => router.push("/dashboard/complaints")} className="w-full bg-[#002B49] hover:bg-[#00385f]">
+                मेरी शिकायतें देखें | View My Complaints
               </Button>
               <Button variant="outline" onClick={() => { setSuccess(null); setPhotos([]); setPreviews([]); setDuplicateResult(null); }} className="w-full">
-                Report Another Issue
+                एक और शिकायत दर्ज करें | Report Another Issue
               </Button>
             </div>
           </CardContent>
@@ -283,10 +294,30 @@ export default function ReportIssuePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-slate-900">Report a Civic Issue</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Provide details about the issue you&apos;d like to report</p>
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Official Government Grievance Form Header */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs relative overflow-hidden">
+        <div className="h-1 w-full absolute top-0 left-0 bg-gradient-to-r from-[#FF671F] via-slate-200 to-[#046A38]" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[11px] font-bold tracking-wider text-[#d32f2f] uppercase bg-red-50 border border-red-200 px-2 py-0.5 rounded">
+                प्रपत्र - सी.बी. 01 • FORM CB-01
+              </span>
+              <span className="text-[11px] font-medium text-slate-500">नागरिक अधिकार पत्र • Citizen Charter</span>
+            </div>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
+              नागरिक शिकायत पंजीकरण प्रपत्र <span className="text-slate-400 font-normal">|</span> File a Grievance
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              शहरी शासन और सार्वजनिक सुविधाओं के त्वरित समाधान हेतु राष्ट्रीय पोर्टल
+            </p>
+          </div>
+          <div className="text-right hidden sm:block">
+            <span className="text-[11px] font-semibold text-slate-600 block">हेल्पलाइन: 1800-11-2026</span>
+            <span className="text-[10px] text-slate-400">Toll Free 24x7 Support</span>
+          </div>
+        </div>
       </div>
 
       {error && (
