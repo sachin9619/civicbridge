@@ -32,7 +32,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         supabaseRef.current = createClient();
       } catch {
-        // Supabase not configured yet — gracefully degrade
         setIsLoading(false);
         return null;
       }
@@ -40,19 +39,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return supabaseRef.current;
   };
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, currentUser?: User | null) => {
     const supabase = getSupabase();
     if (!supabase) return;
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    setProfile(data);
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (data) {
+        setProfile(data);
+      } else {
+        // Construct resilient profile fallback from authenticated user metadata
+        const u = currentUser || user;
+        const fallback: Profile = {
+          id: userId,
+          email: u?.email || "",
+          full_name: (u?.user_metadata?.full_name as string) || u?.email?.split("@")[0] || "Citizen User",
+          role: (u?.user_metadata?.role as any) || "citizen",
+          department_id: null,
+          ward_id: null,
+          avatar_url: null,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        setProfile(fallback);
+      }
+    } catch {
+      // Gracefully retain current profile
+    }
   };
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id);
+    if (user) await fetchProfile(user.id, user);
   };
 
   useEffect(() => {
@@ -60,18 +82,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
 
     const getSession = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      setUser(currentUser);
-      if (currentUser) await fetchProfile(currentUser.id);
-      setIsLoading(false);
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        setUser(currentUser);
+        if (currentUser) {
+          await fetchProfile(currentUser.id, currentUser);
+        }
+      } catch {
+        // Ignore
+      } finally {
+        setIsLoading(false);
+      }
     };
     getSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      if (currentUser) await fetchProfile(currentUser.id);
-      else setProfile(null);
+      if (currentUser) {
+        await fetchProfile(currentUser.id, currentUser);
+      } else {
+        setProfile(null);
+      }
       setIsLoading(false);
     });
 
@@ -81,7 +113,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     const supabase = getSupabase();
-    if (supabase) await supabase.auth.signOut();
+    if (supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // Ignore
+      }
+    }
     setUser(null);
     setProfile(null);
   };

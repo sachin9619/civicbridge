@@ -1,21 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, UserPlus, CheckCircle2, ShieldCheck, Lock } from "lucide-react";
 import { registerSchema, type RegisterFormData } from "@/lib/validations";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { user, profile, isLoading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // Auto-redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (profile?.role === "admin") router.push("/admin");
+      else if (profile?.role === "employee") router.push("/employee");
+      else router.push("/dashboard");
+    }
+  }, [user, profile, authLoading, router]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),

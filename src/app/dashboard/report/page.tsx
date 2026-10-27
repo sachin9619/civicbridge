@@ -25,7 +25,7 @@ import type { DuplicateDetectionResult } from "@/lib/ai/gemini";
 
 export default function ReportIssuePage() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, user, isLoading: authLoading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -154,12 +154,28 @@ export default function ReportIssuePage() {
 
   // Actual Complaint Submission to Supabase
   const executeSubmission = async (data: ComplaintFormData) => {
-    if (!profile) return;
     setIsSubmitting(true);
     setError(null);
 
+    const supabase = createClient();
+    let reporterId = profile?.id || user?.id;
+
+    if (!reporterId) {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        reporterId = authData.user?.id;
+      } catch {
+        // Ignore
+      }
+    }
+
+    if (!reporterId) {
+      setIsSubmitting(false);
+      router.push("/login?redirect=/dashboard/report");
+      return;
+    }
+
     try {
-      const supabase = createClient();
       const trackingId = generateTrackingId();
       const isSensitive = data.category === "WOMEN_SAFETY";
 
@@ -167,7 +183,7 @@ export default function ReportIssuePage() {
       const photoUrls: string[] = [];
       for (const photo of photos) {
         const ext = photo.name.split(".").pop();
-        const path = `${profile.id}/${trackingId}/${Date.now()}.${ext}`;
+        const path = `${reporterId}/${trackingId}/${Date.now()}.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from("complaint-photos")
           .upload(path, photo);
@@ -205,7 +221,7 @@ export default function ReportIssuePage() {
         category: data.category,
         status: "SUBMITTED",
         priority: isSensitive ? "HIGH" : "MEDIUM",
-        reporter_id: profile.id,
+        reporter_id: reporterId,
         department_id: deptData?.id || null,
         ward_id: assignedWardId,
         latitude: data.latitude,
@@ -228,7 +244,7 @@ export default function ReportIssuePage() {
         await supabase.from("status_history").insert({
           complaint_id: complaint.id,
           new_status: "SUBMITTED",
-          changed_by: profile.id,
+          changed_by: reporterId,
           notes: "Complaint submitted by citizen",
         }).select();
       }

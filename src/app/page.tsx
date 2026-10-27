@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/auth-provider";
 import {
   Building2, Search, ArrowRight, Shield, MapPin, Clock, CheckCircle2,
   Trash2, Construction, Lightbulb, Waves, Droplets, ChevronRight,
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
   const router = useRouter();
+  const { user, profile } = useAuth();
   const [searchTrackingId, setSearchTrackingId] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [fontSizeLevel, setFontSizeLevel] = useState<"normal" | "large" | "xlarge">("normal");
@@ -177,26 +179,59 @@ export default function HomePage() {
                 className="border-amber-400 bg-amber-50/70 text-amber-900 hover:bg-amber-100 font-bold text-xs gap-1 hidden sm:flex shadow-xs"
               >
                 <Trophy className="h-3.5 w-3.5 text-amber-600" />
-                स्वच्छ वार्ड रैंकिंग (Scores)
+                स्वच्छ रैंकिंग (Scores)
               </Button>
             </Link>
-            <Link href="/login">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-xs"
-              >
-                Officer / Citizen Sign In
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button
-                size="sm"
-                className="bg-[#002d62] hover:bg-[#001d42] text-white font-semibold text-xs shadow-xs"
-              >
-                Lodge Grievance
-              </Button>
-            </Link>
+
+            {user ? (
+              <>
+                <Link
+                  href={
+                    profile?.role === "admin"
+                      ? "/admin"
+                      : profile?.role === "employee"
+                      ? "/employee"
+                      : "/dashboard"
+                  }
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-slate-300 text-slate-800 hover:bg-slate-100 font-bold text-xs shadow-xs"
+                  >
+                    डैशबोर्ड | Dashboard
+                  </Button>
+                </Link>
+                <Link href="/dashboard/report">
+                  <Button
+                    size="sm"
+                    className="bg-[#002d62] hover:bg-[#001d42] text-white font-bold text-xs shadow-xs"
+                  >
+                    शिकायत दर्ज करें (Lodge)
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-xs"
+                  >
+                    Officer / Citizen Sign In
+                  </Button>
+                </Link>
+                <Link href="/login?redirect=/dashboard/report">
+                  <Button
+                    size="sm"
+                    className="bg-[#002d62] hover:bg-[#001d42] text-white font-semibold text-xs shadow-xs"
+                  >
+                    Lodge Grievance
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
