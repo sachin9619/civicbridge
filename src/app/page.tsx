@@ -11,10 +11,13 @@ import {
   Calendar, Globe, ShieldAlert, ExternalLink, Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/components/providers/language-provider";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 export default function HomePage() {
   const router = useRouter();
   const { user, profile } = useAuth();
+  const { language } = useLanguage();
   const [searchTrackingId, setSearchTrackingId] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [fontSizeLevel, setFontSizeLevel] = useState<"normal" | "large" | "xlarge">("normal");
@@ -85,9 +88,7 @@ export default function HomePage() {
               </button>
             </div>
             <span className="text-slate-600">|</span>
-            <span className="font-semibold text-amber-300 cursor-pointer hover:underline">
-              अ / A
-            </span>
+            <LanguageSwitcher variant="compact" />
             <span className="text-slate-600">|</span>
             {/* Tiranga Flag Mini Badge */}
             <div className="flex flex-col w-5 h-3.5 border border-slate-500 rounded-xs overflow-hidden shadow-xs">
@@ -172,14 +173,16 @@ export default function HomePage() {
 
           {/* Login / Portals Access Button */}
           <div className="flex items-center gap-2 shrink-0">
+            <LanguageSwitcher variant="compact" className="hidden sm:inline-flex" />
+
             <Link href="/wards">
               <Button
                 variant="outline"
                 size="sm"
-                className="border-amber-400 bg-amber-50/70 text-amber-900 hover:bg-amber-100 font-bold text-xs gap-1 hidden sm:flex shadow-xs"
+                className="border-amber-400 bg-amber-50/70 text-amber-900 hover:bg-amber-100 font-bold text-xs gap-1 hidden md:flex shadow-xs"
               >
                 <Trophy className="h-3.5 w-3.5 text-amber-600" />
-                स्वच्छ रैंकिंग (Scores)
+                {language === "hi" ? "स्वच्छ रैंकिंग" : language === "en" ? "Ward Scores" : "स्वच्छ रैंकिंग (Scores)"}
               </Button>
             </Link>
 
@@ -199,7 +202,7 @@ export default function HomePage() {
                     size="sm"
                     className="border-slate-300 text-slate-800 hover:bg-slate-100 font-bold text-xs shadow-xs"
                   >
-                    डैशबोर्ड | Dashboard
+                    {language === "hi" ? "डैशबोर्ड" : language === "en" ? "Dashboard" : "डैशबोर्ड | Dashboard"}
                   </Button>
                 </Link>
                 <Link href="/dashboard/report">
@@ -207,7 +210,7 @@ export default function HomePage() {
                     size="sm"
                     className="bg-[#002d62] hover:bg-[#001d42] text-white font-bold text-xs shadow-xs"
                   >
-                    शिकायत दर्ज करें (Lodge)
+                    {language === "hi" ? "शिकायत दर्ज करें" : language === "en" ? "Lodge Grievance" : "शिकायत दर्ज करें (Lodge)"}
                   </Button>
                 </Link>
               </>
@@ -219,7 +222,7 @@ export default function HomePage() {
                     size="sm"
                     className="border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-xs"
                   >
-                    Officer / Citizen Sign In
+                    {language === "hi" ? "लॉग इन करें" : language === "en" ? "Sign In" : "लॉग इन | Sign In"}
                   </Button>
                 </Link>
                 <Link href="/login?redirect=/dashboard/report">
@@ -227,7 +230,7 @@ export default function HomePage() {
                     size="sm"
                     className="bg-[#002d62] hover:bg-[#001d42] text-white font-semibold text-xs shadow-xs"
                   >
-                    Lodge Grievance
+                    {language === "hi" ? "शिकायत दर्ज करें" : language === "en" ? "Lodge Grievance" : "शिकायत दर्ज करें (Lodge)"}
                   </Button>
                 </Link>
               </>

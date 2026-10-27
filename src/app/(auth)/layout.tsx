@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Building2, ShieldCheck, Lock, ExternalLink } from "lucide-react";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -25,6 +26,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <span className="flex items-center gap-1 text-emerald-400 font-medium">
               <ShieldCheck className="h-3.5 w-3.5" /> 256-Bit SSL Encrypted
             </span>
+            <span className="text-slate-600">|</span>
+            <LanguageSwitcher variant="compact" />
           </div>
         </div>
       </div>

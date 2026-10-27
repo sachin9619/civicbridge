@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useLanguage } from "@/components/providers/language-provider";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import {
   Building2, LayoutDashboard, FileText, PlusCircle, Users, Settings,
   LogOut, Menu, X, Bell, ClipboardList, MapPin, ChevronDown,
@@ -42,6 +44,7 @@ const employeeLinks = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { profile, isLoading, signOut } = useAuth();
+  const { language, t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -102,6 +105,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="flex items-center gap-1 text-emerald-400 font-medium">
               <ShieldCheck className="h-3 w-3" /> Secure Govt Portal
             </span>
+            <span className="text-slate-600">|</span>
+            <LanguageSwitcher variant="compact" />
           </div>
         </div>
       </div>
@@ -197,11 +202,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 >
                   <div className="flex items-center gap-2.5">
                     <link.icon className={cn("h-4 w-4", isActive ? "text-amber-400" : "text-slate-500")} />
-                    <span>{link.label}</span>
+                    <span>
+                      {language === "hi" ? link.hindi : link.label}
+                    </span>
                   </div>
-                  <span className={cn("text-[10px] font-medium opacity-80", isActive ? "text-amber-300" : "text-slate-400")}>
-                    {link.hindi}
-                  </span>
+                  {language === "mix" && (
+                    <span className={cn("text-[10px] font-medium opacity-80", isActive ? "text-amber-300" : "text-slate-400")}>
+                      {link.hindi}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -243,21 +252,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </button>
               <div>
                 <h1 className="text-sm font-bold text-slate-900 leading-tight">
-                  {links.find((l) => l.href === pathname)?.label || "Dashboard"}
+                  {language === "hi"
+                    ? (links.find((l) => l.href === pathname)?.hindi || "डैशबोर्ड")
+                    : (links.find((l) => l.href === pathname)?.label || "Dashboard")}
                 </h1>
-                <p className="text-[10px] text-slate-500 font-medium">
-                  {links.find((l) => l.href === pathname)?.hindi || "नागरिक सेवा केंद्र"}
-                </p>
+                {language === "mix" && (
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    {links.find((l) => l.href === pathname)?.hindi || "नागरिक सेवा केंद्र"}
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Language Switcher in Header */}
+              <LanguageSwitcher variant="compact" />
+
               {/* Report Issue Quick Action (For Citizens) */}
               {profile?.role === "citizen" && (
                 <Link href="/dashboard/report">
                   <Button size="sm" variant="primary" className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white text-xs font-bold gap-1 shadow-xs h-8">
                     <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Lodge Grievance</span>
+                    <span className="hidden sm:inline">
+                      {language === "hi" ? "शिकायत दर्ज करें" : language === "en" ? "Lodge Grievance" : "शिकायत दर्ज करें | Lodge"}
+                    </span>
                   </Button>
                 </Link>
               )}
