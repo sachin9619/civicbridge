@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { LiveCameraModal } from "@/components/ui/live-camera-modal";
 
 export default function ReportIssuePage() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function ReportIssuePage() {
   const [previews, setPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ trackingId: string } | null>(null);
 
@@ -37,6 +39,17 @@ export default function ReportIssuePage() {
   const lat = watch("latitude");
   const lng = watch("longitude");
 
+  const addPhotoFile = (file: File) => {
+    if (photos.length >= 4) {
+      setError("Maximum 4 photos allowed.");
+      return;
+    }
+    setPhotos((prev) => [...prev, file]);
+    const reader = new FileReader();
+    reader.onload = (ev) => setPreviews((prev) => [...prev, ev.target?.result as string]);
+    reader.readAsDataURL(file);
+  };
+
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const valid = files.filter((f) => {
@@ -48,12 +61,7 @@ export default function ReportIssuePage() {
       setError("Maximum 4 photos allowed.");
       return;
     }
-    setPhotos((prev) => [...prev, ...valid]);
-    valid.forEach((f) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => setPreviews((prev) => [...prev, ev.target?.result as string]);
-      reader.readAsDataURL(f);
-    });
+    valid.forEach((f) => addPhotoFile(f));
   };
 
   const removePhoto = (idx: number) => {
@@ -121,9 +129,20 @@ export default function ReportIssuePage() {
         .from("departments")
         .select("id")
         .eq("name", getDepartmentForCategory(data.category))
-        .single();
+        .maybeSingle();
 
+      // Check if suggested ward exists in DB
+      let assignedWardId: string | null = null;
       const suggestedWardId = lookupWardFromCoordinates(data.latitude, data.longitude);
+      const { data: wardExists } = await supabase
+        .from("wards")
+        .select("id")
+        .eq("id", suggestedWardId)
+        .maybeSingle();
+
+      if (wardExists) {
+        assignedWardId = wardExists.id;
+      }
 
       const { error: insertError } = await supabase.from("complaints").insert({
         tracking_id: trackingId,
@@ -134,7 +153,7 @@ export default function ReportIssuePage() {
         priority: isSensitive ? "HIGH" : "MEDIUM",
         reporter_id: profile.id,
         department_id: deptData?.id || null,
-        ward_id: suggestedWardId,
+        ward_id: assignedWardId,
         latitude: data.latitude,
         longitude: data.longitude,
         address: data.address,
@@ -157,12 +176,13 @@ export default function ReportIssuePage() {
           new_status: "SUBMITTED",
           changed_by: profile.id,
           notes: "Complaint submitted by citizen",
-        });
+        }).select();
       }
 
       setSuccess({ trackingId });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit complaint. Please try again.");
+    } catch (err: any) {
+      console.error("Submission error details:", err);
+      setError(err?.message || err?.error_description || "Failed to submit complaint. Please check fields and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -256,28 +276,44 @@ export default function ReportIssuePage() {
         {/* Photos */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Photos</CardTitle>
-            <CardDescription>Add up to 4 photos (JPEG, PNG, WebP — max 5 MB each)</CardDescription>
+            <CardTitle className="text-base">Photos & Live Camera</CardTitle>
+            <CardDescription>Click live photo or upload from device (max 4 photos, 5 MB each)</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               {previews.map((preview, idx) => (
-                <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-200">
+                <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-200 shadow-xs">
                   <img src={preview} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
-                  <button type="button" onClick={() => removePhoto(idx)} className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 flex items-center justify-center">
+                  <button type="button" onClick={() => removePhoto(idx)} className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80">
                     <X className="h-3 w-3 text-white" />
                   </button>
                 </div>
               ))}
+
               {photos.length < 4 && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-24 h-24 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-1 text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
-                >
-                  <Camera className="h-5 w-5" />
-                  <span className="text-[10px] font-medium">Add photo</span>
-                </button>
+                <div className="flex gap-2.5">
+                  {/* Live Camera Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsCameraOpen(true)}
+                    className="w-24 h-24 rounded-xl border-2 border-dashed border-blue-400 bg-blue-50/50 flex flex-col items-center justify-center gap-1.5 text-blue-600 hover:bg-blue-100/60 hover:border-blue-500 transition-all cursor-pointer shadow-xs active:scale-95"
+                  >
+                    <div className="p-1.5 bg-blue-600 text-white rounded-full">
+                      <Camera className="h-4 w-4" />
+                    </div>
+                    <span className="text-[11px] font-semibold">Live Snap</span>
+                  </button>
+
+                  {/* Device File Upload */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 flex flex-col items-center justify-center gap-1.5 text-slate-500 hover:border-slate-400 hover:text-slate-700 transition-all cursor-pointer active:scale-95"
+                  >
+                    <ImageIcon className="h-5 w-5 text-slate-400" />
+                    <span className="text-[11px] font-medium">Upload File</span>
+                  </button>
+                </div>
               )}
             </div>
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={handlePhotoSelect} />
@@ -311,6 +347,13 @@ export default function ReportIssuePage() {
           </Button>
         </div>
       </form>
+
+      {/* Live Camera Modal */}
+      <LiveCameraModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={(file) => addPhotoFile(file)}
+      />
     </div>
   );
 }

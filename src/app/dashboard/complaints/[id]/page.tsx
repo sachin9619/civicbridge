@@ -21,10 +21,10 @@ export default function ComplaintDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let channel: any;
+    let channel: any = null;
+    const supabase = createClient();
 
     const fetchData = async () => {
-      const supabase = createClient();
       const { data: comp } = await supabase
         .from("complaints")
         .select("*, department:departments(*), ward:wards(*)")
@@ -33,34 +33,29 @@ export default function ComplaintDetailPage() {
       setComplaint(comp);
 
       if (comp) {
-        const { data: hist } = await supabase
-          .from("status_history")
-          .select("*")
-          .eq("complaint_id", comp.id)
-          .order("created_at", { ascending: true });
-        setHistory(hist || []);
+        const [histRes, evRes] = await Promise.all([
+          supabase.from("status_history").select("*").eq("complaint_id", comp.id).order("created_at", { ascending: true }),
+          supabase.from("resolution_evidence").select("*").eq("complaint_id", comp.id).order("created_at", { ascending: false }),
+        ]);
+        setHistory(histRes.data || []);
+        setEvidence(evRes.data || []);
 
-        const { data: ev } = await supabase
-          .from("resolution_evidence")
-          .select("*")
-          .eq("complaint_id", comp.id)
-          .order("created_at", { ascending: false });
-        setEvidence(ev || []);
+        // Unique channel name per mount to prevent duplicate subscriptions
+        const channelName = `complaint_channel_${comp.id}_${Date.now()}`;
+        channel = supabase.channel(channelName);
 
-        // Realtime listener for status and resolution updates
-        channel = supabase
-          .channel(`complaint_${comp.id}`)
+        channel
           .on(
             "postgres_changes",
             { event: "UPDATE", schema: "public", table: "complaints", filter: `id=eq.${comp.id}` },
-            (payload) => {
+            (payload: any) => {
               setComplaint((prev) => (prev ? { ...prev, ...payload.new } : null));
             }
           )
           .on(
             "postgres_changes",
             { event: "INSERT", schema: "public", table: "status_history", filter: `complaint_id=eq.${comp.id}` },
-            (payload) => {
+            (payload: any) => {
               setHistory((prev) => [...prev, payload.new as StatusHistoryEntry]);
             }
           )
@@ -80,11 +75,11 @@ export default function ComplaintDetailPage() {
       }
       setIsLoading(false);
     };
+
     fetchData();
 
     return () => {
       if (channel) {
-        const supabase = createClient();
         supabase.removeChannel(channel);
       }
     };

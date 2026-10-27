@@ -103,11 +103,11 @@ export function getDepartmentForCategory(category: string): string {
 export function lookupWardFromCoordinates(lat: number | null, lng: number | null): string {
   // Deterministic demo ward lookup based on coordinates
   // Default to Central Ward if coordinates unavailable or outside bounds
-  if (lat === null || lng === null) return "w1000000-0000-0000-0000-000000000001";
+  if (lat === null || lng === null) return "a1000000-0000-0000-0000-000000000001";
   
-  if (lat > 28.65) return "w1000000-0000-0000-0000-000000000002"; // North Ward
-  if (lat < 28.55) return "w1000000-0000-0000-0000-000000000003"; // South Ward
-  if (lng > 77.25) return "w1000000-0000-0000-0000-000000000004"; // East Ward
-  if (lng < 77.15) return "w1000000-0000-0000-0000-000000000005"; // West Ward
-  return "w1000000-0000-0000-0000-000000000001"; // Central Ward
+  if (lat > 28.65) return "a1000000-0000-0000-0000-000000000002"; // North Ward
+  if (lat < 28.55) return "a1000000-0000-0000-0000-000000000003"; // South Ward
+  if (lng > 77.25) return "a1000000-0000-0000-0000-000000000004"; // East Ward
+  if (lng < 77.15) return "a1000000-0000-0000-0000-000000000005"; // West Ward
+  return "a1000000-0000-0000-0000-000000000001"; // Central Ward
 }
