@@ -66,8 +66,8 @@ export default function AdminComplaintDetailPage() {
     }
 
     const [deptRes, empRes] = await Promise.all([
-      supabase.from("departments").select("*").eq("is_active", true),
-      supabase.from("profiles").select("*").eq("role", "employee").eq("is_active", true),
+      supabase.from("departments").select("*").eq("is_active", true).order("name"),
+      supabase.from("profiles").select("*").eq("role", "employee").order("full_name"),
     ]);
     setDepartments(deptRes.data || []);
     setEmployees(empRes.data || []);
@@ -349,14 +349,37 @@ export default function AdminComplaintDetailPage() {
             </select>
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Employee</label>
-            <select value={assignEmployee} onChange={(e) => setAssignEmployee(e.target.value)}
-              className="w-full h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white focus:ring-2 focus:ring-blue-500">
-              <option value="">Select employee</option>
-              {employees.filter((e) => !assignDept || e.department_id === assignDept).map((e) => (
-                <option key={e.id} value={e.id}>{e.full_name}</option>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-slate-700">Assign To Employee</label>
+              <span className="text-xs text-slate-400">
+                {employees.length} employee{employees.length !== 1 ? "s" : ""} registered
+              </span>
+            </div>
+            <select
+              value={assignEmployee}
+              onChange={(e) => {
+                const empId = e.target.value;
+                setAssignEmployee(empId);
+                // Auto-sync department with employee's department if available
+                const selectedEmp = employees.find((emp) => emp.id === empId);
+                if (selectedEmp?.department_id && !assignDept) {
+                  setAssignDept(selectedEmp.department_id);
+                }
+              }}
+              className="w-full h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">-- Choose Employee --</option>
+              {employees.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.full_name || e.email} {e.department_id ? `(${departments.find((d) => d.id === e.department_id)?.name || "Assigned"})` : "(General Pool)"}
+                </option>
               ))}
             </select>
+            {employees.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">
+                No active employee accounts found. Ensure staff accounts have role set to &apos;employee&apos; in Supabase.
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">Deadline (optional)</label>
