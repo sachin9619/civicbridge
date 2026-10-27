@@ -1,7 +1,212 @@
-// CivicBridge AI Engine powered by Google Gemini with Smart Local Fallback
-// Provides:
-// 1. Before vs After Resolution Verification (Computer Vision)
-// 2. Duplicate Complaint Detection (Proximity + Semantic Matcher)
+/**
+ * CivicBridge AI — Shared Gemini Service
+ *
+ * Server-side only. Never import this in client components.
+ * API key is read exclusively from the server environment.
+ *
+ * Provides:
+ * 1. Role-specific generation (Citizen, Admin, Worker)
+ * 2. Before vs After Resolution Verification (Computer Vision)
+ * 3. Duplicate Complaint Detection (Proximity + Semantic Matcher)
+ */
+
+import { GoogleGenAI } from "@google/genai";
+
+// -------------------------------------------------------------------
+// Model: gemini-flash-latest is the current recommended fast model.
+// Override via GEMINI_MODEL env var if needed.
+// -------------------------------------------------------------------
+export const GEMINI_MODEL =
+  process.env.GEMINI_MODEL ?? "gemini-2.0-flash-001";
+
+// -------------------------------------------------------------------
+// Configuration check — returns true when AI is configured.
+// -------------------------------------------------------------------
+export function isAIConfigured(): boolean {
+  return Boolean(process.env.GEMINI_API_KEY);
+}
+
+let _client: GoogleGenAI | null = null;
+
+function getClient(): GoogleGenAI {
+  if (!_client) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) {
+      throw new Error(
+        "GEMINI_API_KEY is not set. " +
+          "Add it to .env.local and restart the dev server. " +
+          "Get a free key at https://aistudio.google.com/apikey"
+      );
+    }
+    _client = new GoogleGenAI({ apiKey: key });
+  }
+  return _client;
+}
+
+// -------------------------------------------------------------------
+// Role-specific system prompts
+// -------------------------------------------------------------------
+export const SYSTEM_PROMPTS = {
+  citizen: `You are CivicBridge AI, a helpful assistant for citizens using the CivicBridge civic grievance platform.
+
+Your job is to help citizens:
+- Report civic problems clearly and accurately
+- Track the status of their complaints
+- Understand the complaint process
+- Find relevant civic information
+
+Guidelines:
+- Always be polite, clear, and empathetic
+- Use simple language accessible to all citizens
+- Support English, Hindi, and Marathi when asked
+- Never fabricate complaint statuses, deadlines, or government announcements
+- Never access or reveal another citizen's complaint details
+- If you do not know something, say so honestly
+- Do not submit any complaint without explicit citizen confirmation
+- Always label AI-generated content clearly`,
+
+  admin: `You are CivicBridge AI, a decision support assistant for government administrators.
+
+Your job is to help administrators:
+- Understand complaint trends and patterns from real data
+- Identify overdue and high-priority complaints
+- Get recommendations for worker assignment based on data
+- Review resolution evidence systematically
+
+Guidelines:
+- Only refer to actual data provided in the context
+- Clearly distinguish between calculated facts and analytical observations
+- Never invent worker qualifications, complaint statuses, or outcomes
+- Never automatically assign workers or approve resolutions — humans must confirm all actions
+- Flag missing evidence or inconsistencies for human review
+- Present numbers and statistics with the underlying counts, not just percentages
+- Do not present correlations as proven causes`,
+
+  employee: `You are CivicBridge AI, a field assistant for municipal workers.
+
+Your job is to help workers:
+- Understand their assigned tasks clearly
+- Generate appropriate inspection checklists
+- Write professional completion reports from plain descriptions
+- Prepare escalation notes when needed
+- Check evidence completeness before submission
+
+Guidelines:
+- Only provide information about tasks the worker is authorized to access
+- Label AI-generated checklists as suggestions unless officially approved
+- Never fabricate work done, measurements, observations, or evidence
+- Never declare a repair successful — that requires admin approval
+- Keep safety always paramount — do not provide unsafe technical instructions
+- Help workers communicate clearly and professionally`,
+} as const;
+
+export type AIRole = keyof typeof SYSTEM_PROMPTS;
+
+// -------------------------------------------------------------------
+// Core generation function — used by role-specific routes
+// -------------------------------------------------------------------
+export interface GenerateOptions {
+  role: AIRole;
+  userMessage: string;
+  context?: string;
+  history?: { role: "user" | "model"; text: string }[];
+  maxOutputTokens?: number;
+}
+
+export interface GenerateResult {
+  text: string;
+  model: string;
+}
+
+export async function generateWithRole(
+  opts: GenerateOptions
+): Promise<GenerateResult> {
+  const client = getClient();
+  const systemInstruction = SYSTEM_PROMPTS[opts.role];
+
+  const userContent = opts.context
+    ? `[Context from CivicBridge database]\n${opts.context}\n\n[Citizen/User message]\n${opts.userMessage}`
+    : opts.userMessage;
+
+  const contents: { role: "user" | "model"; parts: { text: string }[] }[] = [];
+
+  if (opts.history) {
+    for (const turn of opts.history) {
+      contents.push({ role: turn.role, parts: [{ text: turn.text }] });
+    }
+  }
+
+  contents.push({ role: "user", parts: [{ text: userContent }] });
+
+  const response = await client.models.generateContent({
+    model: GEMINI_MODEL,
+    contents,
+    config: {
+      systemInstruction,
+      maxOutputTokens: opts.maxOutputTokens ?? 1024,
+      temperature: 0.4,
+    },
+  });
+
+  const text = response.text ?? "";
+  return { text, model: GEMINI_MODEL };
+}
+
+// -------------------------------------------------------------------
+// Structured JSON output helper
+// -------------------------------------------------------------------
+export async function generateStructuredJSON<T>(opts: {
+  role: AIRole;
+  prompt: string;
+  context?: string;
+  schemaDescription: string;
+}): Promise<T | null> {
+  const client = getClient();
+  const systemInstruction = SYSTEM_PROMPTS[opts.role];
+
+  const fullPrompt = `${opts.context ? `[Context]\n${opts.context}\n\n` : ""}${opts.prompt}
+
+Respond with valid JSON only. Schema: ${opts.schemaDescription}`;
+
+  const response = await client.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+    config: {
+      systemInstruction,
+      responseMimeType: "application/json",
+      maxOutputTokens: 2048,
+      temperature: 0.2,
+    },
+  });
+
+  try {
+    const raw = response.text ?? "";
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+// -------------------------------------------------------------------
+// AI availability error response helper
+// -------------------------------------------------------------------
+export function aiNotConfiguredResponse() {
+  return Response.json(
+    {
+      error: "ai_not_configured",
+      message:
+        "The AI service is not configured. " +
+        "Please add GEMINI_API_KEY to your .env.local file and restart the server. " +
+        "Get a free key at https://aistudio.google.com/apikey",
+      setupUrl: "https://aistudio.google.com/apikey",
+    },
+    { status: 503 }
+  );
+}
+
+// =========================================================================
+// 1. BEFORE VS AFTER RESOLUTION VERIFICATION
+// =========================================================================
 
 export interface ResolutionVerificationResult {
   isResolved: boolean;
@@ -11,47 +216,6 @@ export interface ResolutionVerificationResult {
   keyObservations: string[];
   recommendation: "APPROVE" | "REJECT" | "REQUEST_BETTER_PHOTO";
   aiEngine: "Gemini 2.5 Flash" | "Civic Vision Engine";
-}
-
-export interface DuplicateDetectionResult {
-  hasDuplicates: boolean;
-  primaryMatch?: {
-    complaintId: string;
-    trackingId: string;
-    title: string;
-    similarityScore: number; // 0 to 100
-    reason: string;
-    status: string;
-    distanceMeters: number;
-  };
-  potentialDuplicates: Array<{
-    complaintId: string;
-    trackingId: string;
-    title: string;
-    similarityScore: number;
-    reason: string;
-    status: string;
-    distanceMeters: number;
-  }>;
-  aiEngine: "Gemini 2.5 Flash" | "Civic Semantic Proximity Engine";
-}
-
-// Calculate Haversine distance in meters
-export function calculateDistanceMeters(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  const R = 6371e3; // Earth radius in meters
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return Math.round(R * c);
 }
 
 // Convert public URL or data URL to base64 format for Gemini
@@ -73,9 +237,6 @@ async function fetchImageBase64(url: string): Promise<{ mimeType: string; data: 
   }
 }
 
-// =========================================================================
-// 1. AI BEFORE VS AFTER RESOLUTION VERIFICATION
-// =========================================================================
 export async function verifyResolutionEvidence(params: {
   beforePhotoUrls: string[];
   afterPhotoUrls: string[];
@@ -90,7 +251,6 @@ export async function verifyResolutionEvidence(params: {
     try {
       const parts: any[] = [];
 
-      // Add prompt
       parts.push({
         text: `You are an expert Municipal Quality Auditor and Civic AI Inspector for CivicBridge.
 Compare the original citizen's complaint photo (BEFORE) with the field worker's resolution proof photo (AFTER).
@@ -111,7 +271,6 @@ Respond strictly in JSON format matching this schema:
 }`,
       });
 
-      // Fetch Before photo (first one)
       if (params.beforePhotoUrls.length > 0) {
         const beforeImg = await fetchImageBase64(params.beforePhotoUrls[0]);
         if (beforeImg) {
@@ -122,7 +281,6 @@ Respond strictly in JSON format matching this schema:
         }
       }
 
-      // Fetch After photo (first one)
       const afterImg = await fetchImageBase64(params.afterPhotoUrls[0]);
       if (afterImg) {
         parts.push({ text: "AFTER PHOTO (Field Worker's Resolution Evidence):" });
@@ -132,7 +290,7 @@ Respond strictly in JSON format matching this schema:
       }
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -159,7 +317,7 @@ Respond strictly in JSON format matching this schema:
     }
   }
 
-  // Heuristic Smart Fallback Engine (when no API key or image fetch offline)
+  // Heuristic Smart Fallback Engine
   const hasNotes = params.employeeNotes.trim().length >= 10;
   const hasPhotos = params.afterPhotoUrls.length > 0;
   const isNotesQualityGood =
@@ -218,6 +376,48 @@ Respond strictly in JSON format matching this schema:
 // =========================================================================
 // 2. AI DUPLICATE COMPLAINT DETECTOR
 // =========================================================================
+
+export interface DuplicateDetectionResult {
+  hasDuplicates: boolean;
+  primaryMatch?: {
+    complaintId: string;
+    trackingId: string;
+    title: string;
+    similarityScore: number; // 0 to 100
+    reason: string;
+    status: string;
+    distanceMeters: number;
+  };
+  potentialDuplicates: Array<{
+    complaintId: string;
+    trackingId: string;
+    title: string;
+    similarityScore: number;
+    reason: string;
+    status: string;
+    distanceMeters: number;
+  }>;
+  aiEngine: "Gemini 2.5 Flash" | "Civic Semantic Proximity Engine";
+}
+
+// Calculate Haversine distance in meters
+export function calculateDistanceMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371e3; // Earth radius in meters
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
+
 export interface CandidateComplaint {
   id: string;
   tracking_id: string;
@@ -238,7 +438,6 @@ export async function detectDuplicateComplaints(params: {
   longitude: number | null;
   existingComplaints: CandidateComplaint[];
 }): Promise<DuplicateDetectionResult> {
-  // Step 1: Filter complaints by proximity (within 500 meters) and active status
   const candidates: Array<CandidateComplaint & { distanceMeters: number }> = [];
 
   for (const comp of params.existingComplaints) {
@@ -257,7 +456,6 @@ export async function detectDuplicateComplaints(params: {
       );
     }
 
-    // Match if within 500 meters OR if same category and similar wording
     const isNearby = dist <= 500;
     const isSameCategory = comp.category === params.category;
 
@@ -274,7 +472,7 @@ export async function detectDuplicateComplaints(params: {
     };
   }
 
-  // Step 2: Try Gemini API for deep semantic comparison
+  // Deep semantic comparison with Gemini
   const apiKey = process.env.GEMINI_API_KEY;
   if (apiKey) {
     try {
@@ -302,7 +500,7 @@ Respond strictly in JSON:
 }`;
 
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -350,7 +548,7 @@ Respond strictly in JSON:
     }
   }
 
-  // Step 3: High-Accuracy Heuristic & Geo-Proximity Matcher
+  // Heuristic & Geo-Proximity Matcher Fallback
   const stopWords = new Set(["the", "a", "an", "is", "in", "at", "of", "on", "and", "or", "near", "road", "street"]);
   const extractTokens = (txt: string) =>
     txt

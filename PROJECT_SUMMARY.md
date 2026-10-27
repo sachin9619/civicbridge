@@ -148,3 +148,122 @@ Now that the core loop is functional, each teammate can pick one of these high-i
 3. **Teammate C (Push & In-App Notifications)**:
    - Build a real-time Notification Bell dropdown in `src/components/layouts/dashboard-layout.tsx` fetching from the `notifications` table on status changes.
    - Sound or vibration trigger on field worker portal when a new task is assigned.
+
+
+---
+
+## 8. CivicBridge AI — Implementation Summary
+
+> **Status:** Implemented and TypeScript-verified. Requires `GEMINI_API_KEY` to activate.
+
+### AI Provider
+- **SDK:** `@google/genai` v2.31.0 (official Google Gen AI SDK)
+- **Default model:** `gemini-2.0-flash-001` (override via `GEMINI_MODEL` env var)
+- **API key:** Server-side only via `GEMINI_API_KEY` — never exposed to the browser
+
+### New Files Created
+
+```
+src/lib/ai/
+├── gemini.ts          # Shared GoogleGenAI client, role prompts, generateWithRole()
+└── data-helpers.ts    # Parameterized Supabase queries for AI context (no raw SQL)
+
+src/app/api/ai/
+├── citizen/route.ts   # POST — Citizen AI Assistant (auth-enforced, citizen only)
+├── admin/route.ts     # POST — Admin AI Copilot (admin only)
+├── worker/route.ts    # POST — Worker Field Assistant (employee only)
+└── civicpulse/route.ts # GET — Neighborhood Intelligence feed (public, no sensitive data)
+
+src/components/ai/
+├── ai-chat-drawer.tsx        # Shared responsive chat drawer + floating button
+├── citizen-ai-assistant.tsx  # Floating "Ask CivicBridge AI" button for citizen portal
+├── admin-ai-copilot.tsx      # Inline AI Insights panel for admin dashboard
+├── worker-ai-assistant.tsx   # Field assistant card for employee task page
+└── civicpulse-feed.tsx       # CivicPulse live neighborhood alerts feed
+```
+
+### Pages Updated (existing features preserved)
+- `src/app/dashboard/page.tsx` — Added CivicPulseFeed + CitizenAIAssistant
+- `src/app/admin/page.tsx` — Added AdminAICopilot panel above KPIs
+- `src/app/employee/task/[id]/page.tsx` — Added WorkerAIAssistant card
+
+### Security Model
+- Every AI API route verifies authentication and role server-side via Supabase
+- Citizens can only query their own complaints (enforced by `reporter_id` filter)
+- Workers can only query tasks assigned to them (`assigned_employee_id` filter)
+- Sensitive complaints (`is_sensitive = true`) are excluded from all AI context
+- The LLM never generates or executes SQL — all DB queries are parameterized helpers
+- AI key is read from `process.env.GEMINI_API_KEY` only (server-side)
+- When `GEMINI_API_KEY` is missing: routes return HTTP 503 with setup instructions; CivicPulse falls back to deterministic (non-AI) alerts; existing app features continue working
+
+### Setup Steps Required
+1. Add `GEMINI_API_KEY=your-key` to `.env.local`
+2. Get a free key at https://aistudio.google.com/apikey
+3. Restart the dev server (`npm run dev`)
+4. No database migrations required — AI uses existing Supabase tables
+
+### AI Fallback Behaviour
+- Missing API key → clear error message with setup instructions in UI
+- CivicPulse works without AI key (deterministic alerts from complaint data)
+- All complaint submission, tracking, assignments, and verification work without AI
+```
+
+
+---
+
+## 8. CivicBridge AI — Implementation Summary
+
+> **Status:** Implemented and TypeScript-verified. Requires `GEMINI_API_KEY` to activate.
+
+### AI Provider
+- **SDK:** `@google/genai` v2.31.0 (official Google Gen AI SDK)
+- **Default model:** `gemini-2.0-flash-001` (override via `GEMINI_MODEL` env var)
+- **API key:** Server-side only via `GEMINI_API_KEY` — never exposed to the browser
+
+### New Files Created
+
+```
+src/lib/ai/
+├── gemini.ts          # Shared GoogleGenAI client, role prompts, generateWithRole()
+└── data-helpers.ts    # Parameterized Supabase queries for AI context (no raw SQL)
+
+src/app/api/ai/
+├── citizen/route.ts   # POST — Citizen AI Assistant (auth-enforced, citizen only)
+├── admin/route.ts     # POST — Admin AI Copilot (admin only)
+├── worker/route.ts    # POST — Worker Field Assistant (employee only)
+└── civicpulse/route.ts # GET — Neighborhood Intelligence feed (public, no sensitive data)
+
+src/components/ai/
+├── ai-chat-drawer.tsx        # Shared responsive chat drawer + floating button
+├── citizen-ai-assistant.tsx  # Floating "Ask CivicBridge AI" button for citizen portal
+├── admin-ai-copilot.tsx      # Inline AI Insights panel for admin dashboard
+├── worker-ai-assistant.tsx   # Field assistant card for employee task page
+└── civicpulse-feed.tsx       # CivicPulse live neighborhood alerts feed
+```
+
+### Pages Updated (existing features preserved)
+- `src/app/dashboard/page.tsx` — Added CivicPulseFeed + CitizenAIAssistant
+- `src/app/admin/page.tsx` — Added AdminAICopilot panel above KPIs
+- `src/app/employee/task/[id]/page.tsx` — Added WorkerAIAssistant card
+
+### Security Model
+- Every AI API route verifies authentication and role server-side via Supabase
+- Citizens can only query their own complaints (enforced by `reporter_id` filter)
+- Workers can only query tasks assigned to them (`assigned_employee_id` filter)
+- Sensitive complaints (`is_sensitive = true`) are excluded from all AI context
+- The LLM never generates or executes SQL — all DB queries are parameterized helpers
+- AI key is read from `process.env.GEMINI_API_KEY` only (server-side)
+- When `GEMINI_API_KEY` is missing: routes return HTTP 503 with setup instructions; CivicPulse falls back to deterministic (non-AI) alerts; existing app features continue working
+
+### Setup Steps Required
+1. Add `GEMINI_API_KEY=your-key` to `.env.local`
+2. Get a free key at https://aistudio.google.com/apikey
+3. Restart the dev server (`npm run dev`)
+4. No database migrations required — AI uses existing Supabase tables
+
+### AI Fallback Behaviour
+- Missing API key → clear error message with setup instructions in UI
+- CivicPulse works without AI key (deterministic alerts from complaint data)
+- All complaint submission, tracking, assignments, and verification work without AI
+```
+

@@ -13,6 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Complaint } from "@/types";
+import { CitizenAIAssistant } from "@/components/ai/citizen-ai-assistant";
+import { CivicPulseFeed } from "@/components/ai/civicpulse-feed";
 
 export default function CitizenDashboardPage() {
   const { profile, isLoading: authLoading } = useAuth();
@@ -143,6 +145,12 @@ export default function CitizenDashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* CivicPulse — Live Neighborhood Alerts */}
+      <CivicPulseFeed />
+
+      {/* Floating AI Assistant — renders portal over entire page */}
+      <CitizenAIAssistant />
     </div>
   );
 }

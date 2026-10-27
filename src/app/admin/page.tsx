@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Complaint } from "@/types";
+import { AdminAICopilot } from "@/components/ai/admin-ai-copilot";
 
 interface DashboardStats {
   total: number;
@@ -99,6 +100,9 @@ export default function AdminDashboardPage() {
           </button>
         </Link>
       </div>
+
+      {/* AI Copilot Panel */}
+      <AdminAICopilot context={{ intent: "analytics" }} />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
