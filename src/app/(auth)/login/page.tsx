@@ -43,7 +43,28 @@ function LoginForm() {
         }
         return;
       }
-      router.push(redirect);
+
+      // Check user role and route to the correct portal
+      const { data: { user } } = await supabase.auth.getUser();
+      let targetPath = redirect;
+
+      if (user && (!searchParams.get("redirect") || redirect === "/dashboard")) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.role === "admin") {
+          targetPath = "/admin";
+        } else if (profile?.role === "employee") {
+          targetPath = "/employee";
+        } else {
+          targetPath = "/dashboard";
+        }
+      }
+
+      router.push(targetPath);
       router.refresh();
     } catch {
       setError("An unexpected error occurred. Please try again.");

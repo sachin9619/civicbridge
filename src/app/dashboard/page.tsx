@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { createClient } from "@/lib/supabase/client";
@@ -14,10 +15,23 @@ import { formatRelativeTime } from "@/lib/utils";
 import type { Complaint } from "@/types";
 
 export default function CitizenDashboardPage() {
-  const { profile } = useAuth();
+  const { profile, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [stats, setStats] = useState({ total: 0, active: 0, resolved: 0, pending: 0 });
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && profile) {
+      if (profile.role === "admin") {
+        router.replace("/admin");
+        return;
+      } else if (profile.role === "employee") {
+        router.replace("/employee");
+        return;
+      }
+    }
+  }, [profile, authLoading, router]);
 
   useEffect(() => {
     const fetchData = async () => {
