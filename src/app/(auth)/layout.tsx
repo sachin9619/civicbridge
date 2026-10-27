@@ -26,8 +26,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <span className="flex items-center gap-1 text-emerald-400 font-medium">
               <ShieldCheck className="h-3.5 w-3.5" /> 256-Bit SSL Encrypted
             </span>
-            <span className="text-slate-600">|</span>
-            <LanguageSwitcher variant="compact" />
           </div>
         </div>
       </div>
@@ -57,9 +55,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </div>
           </Link>
 
-          <Link href="/" className="text-xs font-semibold text-blue-800 hover:text-blue-900 flex items-center gap-1">
-            Back to Home Portal <ExternalLink className="h-3 w-3" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <Link href="/" className="text-xs font-semibold text-blue-800 hover:text-blue-900 flex items-center gap-1">
+              Back to Home Portal <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
         </div>
       </header>
 

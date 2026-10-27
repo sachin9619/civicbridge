@@ -105,8 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="flex items-center gap-1 text-emerald-400 font-medium">
               <ShieldCheck className="h-3 w-3" /> Secure Govt Portal
             </span>
-            <span className="text-slate-600">|</span>
-            <LanguageSwitcher variant="compact" />
+
           </div>
         </div>
       </div>
@@ -266,7 +265,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Language Switcher in Header */}
-              <LanguageSwitcher variant="compact" />
+              <LanguageSwitcher />
 
               {/* Report Issue Quick Action (For Citizens) */}
               {profile?.role === "citizen" && (
@@ -355,3 +354,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   );
 }
+
+

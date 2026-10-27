@@ -10,6 +10,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import type { Ward, Complaint } from "@/types";
 
 interface WardScorecard {
@@ -156,9 +157,12 @@ export default function WardsLeaderboardPage() {
             <span className="text-slate-400">·</span>
             <span className="text-slate-300">आवासन और शहरी कार्य मंत्रालय (MoHUA)</span>
           </div>
-          <Link href="/" className="text-amber-300 hover:underline flex items-center gap-1 font-semibold">
-            मुख्य पृष्ठ पर लौटें (Back to Home)
-          </Link>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher compact />
+            <Link href="/" className="text-amber-300 hover:underline flex items-center gap-1 font-semibold">
+              मुख्य पृष्ठ पर लौटें (Back to Home)
+            </Link>
+          </div>
         </div>
       </div>
 

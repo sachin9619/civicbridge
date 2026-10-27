@@ -88,8 +88,6 @@ export default function HomePage() {
               </button>
             </div>
             <span className="text-slate-600">|</span>
-            <LanguageSwitcher variant="compact" />
-            <span className="text-slate-600">|</span>
             {/* Tiranga Flag Mini Badge */}
             <div className="flex flex-col w-5 h-3.5 border border-slate-500 rounded-xs overflow-hidden shadow-xs">
               <div className="h-1/3 bg-[#FF9933]" />
@@ -173,7 +171,7 @@ export default function HomePage() {
 
           {/* Login / Portals Access Button */}
           <div className="flex items-center gap-2 shrink-0">
-            <LanguageSwitcher variant="compact" className="hidden sm:inline-flex" />
+            <LanguageSwitcher />
 
             <Link href="/wards">
               <Button

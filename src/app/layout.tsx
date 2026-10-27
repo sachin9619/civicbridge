@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { LanguageProvider } from "@/components/providers/language-provider";
-import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,8 +24,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <LanguageProvider>
             {children}
-            {/* Global Language Switcher Button on every page */}
-            <LanguageSwitcher variant="floating" />
           </LanguageProvider>
         </AuthProvider>
       </body>
