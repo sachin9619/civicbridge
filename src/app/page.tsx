@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
@@ -248,12 +249,15 @@ export default function HomePage() {
           {/* Framed Dignitary Avatar with Tricolor Ring */}
           <div className="relative shrink-0">
             <div className="h-28 w-28 md:h-32 md:md:w-32 rounded-full p-1 bg-gradient-to-tr from-[#FF9933] via-white to-[#138808] shadow-xl">
-              <div className="h-full w-full rounded-full bg-slate-100 overflow-hidden flex items-center justify-center border-2 border-white">
-                {/* Dignitary vector illustration */}
-                <div className="flex flex-col items-center justify-center text-slate-700">
-                  <div className="h-10 w-10 rounded-full bg-slate-300 mb-1" />
-                  <div className="h-10 w-16 rounded-t-full bg-slate-400" />
-                </div>
+              <div className="h-full w-full rounded-full bg-slate-100 overflow-hidden flex items-center justify-center border-2 border-white relative">
+                {/* Dignitary photo */}
+                <Image
+                  src="/pm-modi.jpg"
+                  alt="Shri Narendra Modi, Prime Minister of India"
+                  fill
+                  className="object-cover object-top"
+                  priority
+                />
               </div>
             </div>
             <span className="absolute bottom-0 right-0 bg-[#d32f2f] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-white">
