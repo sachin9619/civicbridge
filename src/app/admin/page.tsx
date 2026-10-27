@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
   FileText, Clock, CheckCircle2, AlertCircle, Users, BarChart3,
-  ArrowUpRight, TrendingUp, AlertTriangle, UserCheck, Shield, Building2, MapPin
+  ArrowUpRight, TrendingUp, AlertTriangle, UserCheck, Shield, Building2, MapPin,
+  Flame, Zap, RotateCw, Sparkles, Loader2, Check
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { SLABadge } from "@/components/ui/sla-badge";
+import { isComplaintOverdue } from "@/lib/sla";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Complaint } from "@/types";
 import { AdminAICopilot } from "@/components/ai/admin-ai-copilot";
@@ -31,42 +35,79 @@ export default function AdminDashboardPage() {
   const { profile } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentComplaints, setRecentComplaints] = useState<Complaint[]>([]);
+  const [allComplaints, setAllComplaints] = useState<Complaint[]>([]);
   const [categoryStats, setCategoryStats] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const supabase = createClient();
+  // SLA Escalation Trigger state
+  const [isEscalating, setIsEscalating] = useState(false);
+  const [escalationResult, setEscalationResult] = useState<{
+    evaluated: number;
+    escalatedCount: number;
+    alreadyEscalatedCount: number;
+    message?: string;
+  } | null>(null);
 
-      // Fetch all complaints
-      const { data: complaints } = await supabase
-        .from("complaints")
-        .select("*")
-        .order("created_at", { ascending: false });
+  const fetchData = useCallback(async () => {
+    const supabase = createClient();
 
-      const all = complaints || [];
-      setRecentComplaints(all.slice(0, 8));
+    // Fetch all complaints
+    const { data: complaints } = await supabase
+      .from("complaints")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-      setStats({
-        total: all.length,
-        submitted: all.filter((c) => c.status === "SUBMITTED").length,
-        underReview: all.filter((c) => c.status === "UNDER_REVIEW").length,
-        assigned: all.filter((c) => c.status === "ASSIGNED").length,
-        inProgress: all.filter((c) => c.status === "IN_PROGRESS").length,
-        pendingVerification: all.filter((c) => c.status === "PENDING_VERIFICATION").length,
-        resolved: all.filter((c) => c.status === "RESOLVED").length,
-        rejected: all.filter((c) => c.status === "REJECTED").length,
-      });
+    const all = complaints || [];
+    setAllComplaints(all);
+    setRecentComplaints(all.slice(0, 8));
 
-      // Category distribution
-      const cats: Record<string, number> = {};
-      all.forEach((c) => { cats[c.category] = (cats[c.category] || 0) + 1; });
-      setCategoryStats(cats);
+    setStats({
+      total: all.length,
+      submitted: all.filter((c) => c.status === "SUBMITTED").length,
+      underReview: all.filter((c) => c.status === "UNDER_REVIEW").length,
+      assigned: all.filter((c) => c.status === "ASSIGNED").length,
+      inProgress: all.filter((c) => c.status === "IN_PROGRESS").length,
+      pendingVerification: all.filter((c) => c.status === "PENDING_VERIFICATION").length,
+      resolved: all.filter((c) => c.status === "RESOLVED").length,
+      rejected: all.filter((c) => c.status === "REJECTED").length,
+    });
 
-      setIsLoading(false);
-    };
-    fetchData();
+    // Category distribution
+    const cats: Record<string, number> = {};
+    all.forEach((c) => { cats[c.category] = (cats[c.category] || 0) + 1; });
+    setCategoryStats(cats);
+
+    setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Live trigger for SLA Escalation Engine
+  const handleTriggerEscalation = async () => {
+    setIsEscalating(true);
+    setEscalationResult(null);
+    try {
+      const res = await fetch("/api/sla/escalate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      setEscalationResult(data);
+      // Refresh dashboard complaints to reflect elevated priority
+      await fetchData();
+    } catch (err: any) {
+      setEscalationResult({
+        evaluated: 0,
+        escalatedCount: 0,
+        alreadyEscalatedCount: 0,
+        message: err.message || "Failed to run escalation engine",
+      });
+    } finally {
+      setIsEscalating(false);
+    }
+  };
 
   if (profile?.role !== "admin") {
     return (
@@ -77,6 +118,9 @@ export default function AdminDashboardPage() {
       </div>
     );
   }
+
+  const overdueComplaintsCount = allComplaints.filter((c) => isComplaintOverdue(c)).length;
+  const mappedCount = allComplaints.filter((c) => c.latitude && c.longitude && !c.is_sensitive).length;
 
   const kpis = [
     { labelHi: "कुल शिकायतें", labelEn: "Total Complaints", value: stats?.total, icon: FileText, color: "text-blue-700 bg-blue-50 border-l-4 border-l-blue-600" },
@@ -132,6 +176,80 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* CivicBridge Smart Civic Intelligence Operations Banner */}
+      <Card className="border-amber-200 bg-gradient-to-r from-amber-50/70 via-orange-50/40 to-slate-50 shadow-xs relative overflow-hidden">
+        <div className="h-1 w-full absolute top-0 left-0 bg-gradient-to-r from-amber-500 to-red-500" />
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white shadow-xs">
+                  <Zap className="h-3 w-3" />
+                </span>
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                  स्मार्ट नागरिक बुद्धिमत्ता एवं SLA इंजन • Smart Civic Operations
+                </span>
+                <Badge variant="outline" className="text-[10px] bg-white border-amber-300 text-amber-800">
+                  Citizen Charter SLA Matrix
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-600">
+                स्वचालित SLA ट्रैकिंग, समय सीमा पार शिकायतों का स्वतः एस्केलेशन, 450m भू-स्थानिक क्लस्टरिंग और डुप्लिकेट पहचान।
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="text-right pr-2 hidden sm:block border-r border-amber-200">
+                <span className="text-[10px] font-bold text-slate-500 uppercase block">SLA उल्लंघन स्थिति</span>
+                <span className="text-xs font-bold text-red-700">
+                  {overdueComplaintsCount} शिकायतें समय सीमा पार
+                </span>
+              </div>
+
+              <Button
+                size="sm"
+                onClick={handleTriggerEscalation}
+                disabled={isEscalating}
+                className="h-8 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white gap-1.5 shadow-xs"
+              >
+                {isEscalating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Flame className="h-3.5 w-3.5 text-amber-200" />}
+                {isEscalating ? "एस्केलेशन जांच जारी..." : "SLA स्वतः एस्केलेशन चलाएं (Run Auto-Escalate)"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Escalation Execution Feedback Banner */}
+          {escalationResult && (
+            <div className="mt-3 p-3 rounded-lg bg-white border border-amber-300 text-xs text-slate-800 shadow-xs flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>
+                  <strong>SLA जांच पूर्ण:</strong> कुल {escalationResult.evaluated} शिकायतों का विश्लेषण किया गया।{" "}
+                  {escalationResult.escalatedCount > 0 ? (
+                    <span className="text-red-700 font-bold font-mono">
+                      {escalationResult.escalatedCount} शिकायतें &quot;URGENT&quot; स्तर पर एस्केलेट की गईं।
+                    </span>
+                  ) : (
+                    <span className="text-emerald-700 font-medium">
+                      कोई नई शिकायत समय सीमा पार नहीं पाई गई।
+                    </span>
+                  )}{" "}
+                  ({escalationResult.alreadyEscalatedCount} पूर्व में एस्केलेटेड - Idempotent, कोई दोहराव नहीं)
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEscalationResult(null)}
+                className="h-6 text-[11px] text-slate-400 hover:text-slate-600 px-1.5"
+              >
+                ✕
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* AI Copilot Panel */}
       <AdminAICopilot context={{ intent: "analytics" }} />
 
@@ -186,13 +304,14 @@ export default function AdminDashboardPage() {
                       className="flex items-center justify-between py-3 hover:bg-slate-50/80 -mx-2 px-3 rounded-lg transition-colors group"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-0.5">
+                        <div className="flex flex-wrap items-center gap-2 mb-0.5">
                           <span className="text-[11px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
                             {c.tracking_id}
                           </span>
                           <span className="text-[11px] text-slate-400 font-medium">
                             {formatRelativeTime(c.created_at)}
                           </span>
+                          <SLABadge complaint={c} />
                           {c.is_sensitive && (
                             <span className="text-[10px] font-bold text-pink-700 bg-pink-50 border border-pink-200 px-1.5 rounded">
                               गोपनीय

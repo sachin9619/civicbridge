@@ -7,11 +7,12 @@ import { useAuth } from "@/components/providers/auth-provider";
 import {
   ArrowLeft, MapPin, Calendar, Tag, Building2, User, Clock,
   UserCheck, CheckCircle2, XCircle, Send, AlertTriangle, Sparkles,
-  ExternalLink, Loader2, ArrowRight, ShieldCheck,
+  ExternalLink, Loader2, ArrowRight, ShieldCheck, Link2, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { SLABadge } from "@/components/ui/sla-badge";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,6 +54,8 @@ export default function AdminComplaintDetailPage() {
   const [isScanningDuplicates, setIsScanningDuplicates] = useState(false);
   const [duplicateScanResult, setDuplicateScanResult] = useState<DuplicateDetectionResult | null>(null);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [isLinkingDuplicate, setIsLinkingDuplicate] = useState<string | null>(null);
+  const [duplicateLinkSuccess, setDuplicateLinkSuccess] = useState<string | null>(null);
 
   // AI Evidence Verification state
   const [aiAudits, setAiAudits] = useState<Record<string, ResolutionVerificationResult>>({});
@@ -214,6 +217,33 @@ export default function AdminComplaintDetailPage() {
     }
   };
 
+  // Confirm Link as Duplicate
+  const handleLinkDuplicate = async (canonicalId: string) => {
+    if (!complaint) return;
+    setIsLinkingDuplicate(canonicalId);
+    setDuplicateLinkSuccess(null);
+    try {
+      const res = await fetch("/api/complaints/link-duplicate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          originalComplaintId: canonicalId,
+          duplicateComplaintId: complaint.id,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to link duplicate");
+
+      setDuplicateLinkSuccess("शिकायत सफलतापूर्वक मुख्य रिकॉर्ड से लिंक कर दी गई है।");
+      await fetchData();
+    } catch (err: any) {
+      alert(err.message || "त्रुटि: डुप्लिकेट लिंक करने में असमर्थ");
+    } finally {
+      setIsLinkingDuplicate(null);
+    }
+  };
+
   // Run AI Resolution Evidence Audit
   const handleAuditEvidence = async (ev: ResolutionEvidence) => {
     if (!complaint) return;
@@ -272,6 +302,8 @@ export default function AdminComplaintDetailPage() {
               <Badge variant={complaint.priority === "URGENT" ? "error" : complaint.priority === "HIGH" ? "warning" : "default"} className="font-bold">
                 {complaint.priority}
               </Badge>
+              {/* Citizen Charter SLA Badge */}
+              <SLABadge complaint={complaint} />
               {complaint.is_sensitive && (
                 <span className="text-[10px] font-bold text-pink-700 bg-pink-50 border border-pink-200 px-2 py-0.5 rounded">
                   गोपनीय / SENSITIVE
@@ -520,6 +552,13 @@ export default function AdminComplaintDetailPage() {
         </DialogHeader>
 
         <div className="space-y-3 py-2 text-sm">
+          {duplicateLinkSuccess && (
+            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>{duplicateLinkSuccess}</span>
+            </div>
+          )}
+
           {duplicateScanResult && duplicateScanResult.potentialDuplicates.length === 0 ? (
             <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-center space-y-1">
               <CheckCircle2 className="h-6 w-6 text-emerald-600 mx-auto" />
@@ -547,14 +586,29 @@ export default function AdminComplaintDetailPage() {
                       <MapPin className="h-3 w-3" />
                       {dup.distanceMeters < 99999 ? `${dup.distanceMeters}m away` : "City-wide"}
                     </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-7 gap-1"
-                      onClick={() => router.push(`/admin/complaints/${dup.complaintId}`)}
-                    >
-                      Inspect Ticket <ArrowRight className="h-3 w-3" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7 gap-1"
+                        onClick={() => router.push(`/admin/complaints/${dup.complaintId}`)}
+                      >
+                        Inspect Ticket <ArrowRight className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="text-xs h-7 gap-1 bg-amber-600 hover:bg-amber-700 text-white font-medium"
+                        onClick={() => handleLinkDuplicate(dup.complaintId)}
+                        disabled={isLinkingDuplicate === dup.complaintId}
+                      >
+                        {isLinkingDuplicate === dup.complaintId ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Link2 className="h-3 w-3" />
+                        )}
+                        Link Duplicate (लिंक करें)
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-xs text-slate-600 bg-white p-2 rounded border border-slate-200/80">
                     {dup.reason}
