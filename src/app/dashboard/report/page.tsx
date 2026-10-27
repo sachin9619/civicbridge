@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Camera, MapPin, Upload, X, CheckCircle2, Loader2, AlertTriangle, ImageIcon,
+  Camera, MapPin, Upload, X, CheckCircle2, Loader2, AlertTriangle,
+  ImageIcon, Sparkles, ExternalLink, ArrowRight, ShieldAlert,
 } from "lucide-react";
 import { complaintSchema, type ComplaintFormData } from "@/lib/validations";
 import { createClient } from "@/lib/supabase/client";
@@ -16,7 +17,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { LiveCameraModal } from "@/components/ui/live-camera-modal";
+import type { DuplicateDetectionResult } from "@/lib/ai/gemini";
 
 export default function ReportIssuePage() {
   const router = useRouter();
@@ -30,12 +34,20 @@ export default function ReportIssuePage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ trackingId: string } | null>(null);
 
+  // AI Duplicate Detection state
+  const [isScanningDuplicates, setIsScanningDuplicates] = useState(false);
+  const [duplicateResult, setDuplicateResult] = useState<DuplicateDetectionResult | null>(null);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<ComplaintFormData | null>(null);
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ComplaintFormData>({
     resolver: zodResolver(complaintSchema),
     defaultValues: { latitude: null, longitude: null, address: null },
   });
 
   const selectedCategory = watch("category");
+  const watchTitle = watch("title");
+  const watchDescription = watch("description");
   const lat = watch("latitude");
   const lng = watch("longitude");
 
@@ -99,7 +111,48 @@ export default function ReportIssuePage() {
     );
   };
 
-  const onSubmit = async (data: ComplaintFormData) => {
+  // AI Duplicate Check Function
+  const runDuplicateScan = async (titleVal: string, descVal: string, catVal: string, manualTrigger = false) => {
+    if (!titleVal || !catVal) {
+      if (manualTrigger) setError("Please enter an Issue Title and Category first.");
+      return null;
+    }
+
+    setIsScanningDuplicates(true);
+    try {
+      const res = await fetch("/api/ai/check-duplicates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: titleVal,
+          description: descVal || "",
+          category: catVal,
+          latitude: lat || null,
+          longitude: lng || null,
+        }),
+      });
+
+      if (res.ok) {
+        const data: DuplicateDetectionResult = await res.json();
+        setDuplicateResult(data);
+        if (data.hasDuplicates) {
+          setIsDuplicateDialogOpen(true);
+          return data;
+        } else if (manualTrigger) {
+          setError(null);
+        }
+        return data;
+      }
+    } catch (e) {
+      console.warn("AI Duplicate check failed:", e);
+    } finally {
+      setIsScanningDuplicates(false);
+    }
+    return null;
+  };
+
+  // Actual Complaint Submission to Supabase
+  const executeSubmission = async (data: ComplaintFormData) => {
     if (!profile) return;
     setIsSubmitting(true);
     setError(null);
@@ -188,6 +241,19 @@ export default function ReportIssuePage() {
     }
   };
 
+  // Form Submit Handler with AI Deduplication Check
+  const onSubmit = async (data: ComplaintFormData) => {
+    // If not checked yet, do a quick duplicate scan first
+    if (!duplicateResult) {
+      const scan = await runDuplicateScan(data.title, data.description, data.category, false);
+      if (scan && scan.hasDuplicates) {
+        setPendingFormData(data);
+        return; // Pause submit to show duplicate alert dialog
+      }
+    }
+    await executeSubmission(data);
+  };
+
   if (success) {
     return (
       <div className="max-w-lg mx-auto">
@@ -206,7 +272,7 @@ export default function ReportIssuePage() {
               <Button variant="primary" onClick={() => router.push("/dashboard/complaints")} className="w-full">
                 View My Complaints
               </Button>
-              <Button variant="outline" onClick={() => { setSuccess(null); setPhotos([]); setPreviews([]); }} className="w-full">
+              <Button variant="outline" onClick={() => { setSuccess(null); setPhotos([]); setPreviews([]); setDuplicateResult(null); }} className="w-full">
                 Report Another Issue
               </Button>
             </div>
@@ -226,6 +292,14 @@ export default function ReportIssuePage() {
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2" role="alert">
           <AlertTriangle className="h-4 w-4 shrink-0" /> {error}
+        </div>
+      )}
+
+      {/* AI Duplicate Detection Inline Notification */}
+      {duplicateResult && !duplicateResult.hasDuplicates && (
+        <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
+          <span><strong>AI Scan Clean:</strong> No matching duplicate complaints found nearby. Your issue is unique.</span>
         </div>
       )}
 
@@ -264,11 +338,26 @@ export default function ReportIssuePage() {
 
         {/* Details */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Issue Details</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Issue Details</CardTitle>
+              <CardDescription>Describe what you observed</CardDescription>
+            </div>
+            {/* AI Duplicate Scanner Quick Trigger Button */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => runDuplicateScan(watchTitle, watchDescription, selectedCategory, true)}
+              disabled={isScanningDuplicates || !watchTitle || !selectedCategory}
+              className="text-xs gap-1.5 text-blue-700 border-blue-200 bg-blue-50/60 hover:bg-blue-100"
+            >
+              {isScanningDuplicates ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-blue-600" />}
+              {isScanningDuplicates ? "Scanning..." : "Scan for Duplicates with AI"}
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Input label="Title" placeholder="Brief summary of the issue" error={errors.title?.message} {...register("title")} />
+            <Input label="Title" placeholder="e.g. Broken streetlight on MG Road" error={errors.title?.message} {...register("title")} />
             <Textarea label="Description" placeholder="Describe the issue in detail — what, where, and how it affects you..." rows={4} error={errors.description?.message} {...register("description")} />
           </CardContent>
         </Card>
@@ -298,25 +387,27 @@ export default function ReportIssuePage() {
                     onClick={() => setIsCameraOpen(true)}
                     className="w-24 h-24 rounded-xl border-2 border-dashed border-blue-400 bg-blue-50/50 flex flex-col items-center justify-center gap-1.5 text-blue-600 hover:bg-blue-100/60 hover:border-blue-500 transition-all cursor-pointer shadow-xs active:scale-95"
                   >
-                    <div className="p-1.5 bg-blue-600 text-white rounded-full">
+                    <div className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
                       <Camera className="h-4 w-4" />
                     </div>
-                    <span className="text-[11px] font-semibold">Live Snap</span>
+                    <span className="text-[11px] font-semibold">Live Camera</span>
                   </button>
 
-                  {/* Device File Upload */}
+                  {/* Device Upload Button */}
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 flex flex-col items-center justify-center gap-1.5 text-slate-500 hover:border-slate-400 hover:text-slate-700 transition-all cursor-pointer active:scale-95"
+                    className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-1.5 text-slate-500 hover:border-slate-400 hover:bg-slate-50 transition-all cursor-pointer shadow-xs"
                   >
-                    <ImageIcon className="h-5 w-5 text-slate-400" />
+                    <div className="h-8 w-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center">
+                      <Upload className="h-4 w-4" />
+                    </div>
                     <span className="text-[11px] font-medium">Upload File</span>
                   </button>
                 </div>
               )}
             </div>
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={handlePhotoSelect} />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handlePhotoSelect} className="hidden" />
           </CardContent>
         </Card>
 
@@ -324,36 +415,119 @@ export default function ReportIssuePage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Location</CardTitle>
-            <CardDescription>Help us locate the issue for faster routing</CardDescription>
+            <CardDescription>Help officials locate the issue accurately</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Button type="button" variant="outline" onClick={requestLocation} disabled={isLocating}>
-              {isLocating ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
-              {isLocating ? "Getting location..." : lat ? "Update Location" : "Use My Location"}
+          <CardContent className="space-y-4">
+            <Button type="button" variant="outline" onClick={requestLocation} disabled={isLocating} className="w-full">
+              {isLocating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MapPin className="h-4 w-4 mr-2" />}
+              {isLocating ? "Detecting Location..." : "Use Current GPS Location"}
             </Button>
             {lat && lng && (
-              <p className="text-xs text-emerald-600 flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3" /> Location captured ({Number(lat).toFixed(4)}, {Number(lng).toFixed(4)})
+              <p className="text-xs text-slate-500 font-mono">
+                Coordinates: {lat.toFixed(6)}, {lng.toFixed(6)}
               </p>
             )}
-            <Input label="Address (optional)" placeholder="Enter address manually or refine auto-detected address" {...register("address")} />
+            <Input label="Address / Landmark" placeholder="Street address, nearest landmark, area name" {...register("address")} />
           </CardContent>
         </Card>
 
-        {/* Submit */}
-        <div className="flex gap-3 pb-6">
-          <Button type="submit" variant="primary" size="lg" className="flex-1" isLoading={isSubmitting}>
-            <Upload className="h-4 w-4" /> Submit Complaint
-          </Button>
-        </div>
+        <Button type="submit" variant="primary" size="lg" disabled={isSubmitting} className="w-full shadow-sm">
+          {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          {isSubmitting ? "Submitting..." : "Submit Complaint"}
+        </Button>
       </form>
 
       {/* Live Camera Modal */}
       <LiveCameraModal
         isOpen={isCameraOpen}
         onClose={() => setIsCameraOpen(false)}
-        onCapture={(file) => addPhotoFile(file)}
+        onCapture={(file) => {
+          addPhotoFile(file);
+          setIsCameraOpen(false);
+        }}
       />
+
+      {/* AI Duplicate Detected Dialog */}
+      <Dialog
+        open={isDuplicateDialogOpen}
+        onClose={() => setIsDuplicateDialogOpen(false)}
+        className="max-w-lg"
+      >
+        <DialogHeader>
+          <div className="flex items-center gap-2.5">
+            <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-base font-bold text-amber-950 flex items-center gap-2">
+                Similar Complaint Found Nearby
+                <Badge variant="warning" className="text-[10px]">
+                  {duplicateResult?.primaryMatch?.similarityScore || 85}% Match
+                </Badge>
+              </DialogTitle>
+              <DialogDescription>
+                CivicBridge AI detected an active ticket that may refer to the same issue.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        {duplicateResult?.primaryMatch && (
+          <div className="space-y-3 py-2 text-sm">
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs font-semibold text-blue-600">
+                  {duplicateResult.primaryMatch.trackingId}
+                </span>
+                <Badge variant="default" className="text-[10px] capitalize">
+                  {duplicateResult.primaryMatch.status.toLowerCase().replace(/_/g, " ")}
+                </Badge>
+              </div>
+              <p className="font-semibold text-slate-900">{duplicateResult.primaryMatch.title}</p>
+              <div className="flex items-center gap-3 text-xs text-slate-500 pt-0.5">
+                {duplicateResult.primaryMatch.distanceMeters < 99999 && (
+                  <span className="flex items-center gap-1 font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
+                    <MapPin className="h-3 w-3" />
+                    {duplicateResult.primaryMatch.distanceMeters}m away
+                  </span>
+                )}
+                <span>{duplicateResult.primaryMatch.reason}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Subscribing or tracking the existing ticket helps municipal workers resolve issues faster without duplicate work orders.
+            </p>
+
+            <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsDuplicateDialogOpen(false);
+                  if (pendingFormData) {
+                    executeSubmission(pendingFormData);
+                  }
+                }}
+                className="w-full sm:w-auto"
+              >
+                Submit as New Complaint Anyway
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => {
+                  router.push(`/dashboard/complaints/${duplicateResult.primaryMatch?.complaintId}`);
+                }}
+                className="w-full sm:w-auto gap-1.5"
+              >
+                View Existing Ticket
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </Dialog>
     </div>
   );
 }

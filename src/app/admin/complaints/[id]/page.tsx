@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
   ArrowLeft, MapPin, Calendar, Tag, Building2, User, Clock,
-  UserCheck, CheckCircle2, XCircle, Send, AlertTriangle,
+  UserCheck, CheckCircle2, XCircle, Send, AlertTriangle, Sparkles,
+  ExternalLink, Loader2, ArrowRight, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,7 @@ import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } fr
 import { formatDate, getStatusLabel, getDepartmentForCategory } from "@/lib/utils";
 import { STATUS_TRANSITIONS } from "@/types";
 import type { Complaint, StatusHistoryEntry, ResolutionEvidence, ComplaintStatus, Department, Profile as ProfileType } from "@/types";
+import type { DuplicateDetectionResult, ResolutionVerificationResult } from "@/lib/ai/gemini";
 
 export default function AdminComplaintDetailPage() {
   const params = useParams();
@@ -46,6 +48,15 @@ export default function AdminComplaintDetailPage() {
   const [reviewingEvidence, setReviewingEvidence] = useState<ResolutionEvidence | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
   const [isReviewing, setIsReviewing] = useState(false);
+
+  // AI Duplicate Detection state
+  const [isScanningDuplicates, setIsScanningDuplicates] = useState(false);
+  const [duplicateScanResult, setDuplicateScanResult] = useState<DuplicateDetectionResult | null>(null);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+
+  // AI Evidence Verification state
+  const [aiAudits, setAiAudits] = useState<Record<string, ResolutionVerificationResult>>({});
+  const [auditingEvidenceId, setAuditingEvidenceId] = useState<string | null>(null);
 
   const fetchData = async () => {
     const supabase = createClient();
@@ -96,33 +107,22 @@ export default function AdminComplaintDetailPage() {
 
     // Update complaint
     await supabase.from("complaints").update({
-      status: "ASSIGNED",
       department_id: assignDept,
       assigned_employee_id: assignEmployee,
+      status: "ASSIGNED",
       deadline: assignDeadline || null,
     }).eq("id", complaint.id);
 
-    // Status history
+    // Add status history
     await supabase.from("status_history").insert({
       complaint_id: complaint.id,
       old_status: complaint.status,
       new_status: "ASSIGNED",
       changed_by: profile.id,
-      notes: assignNotes || "Complaint assigned to employee",
-    });
-
-    // Audit log
-    await supabase.from("audit_logs").insert({
-      actor_id: profile.id,
-      action: "COMPLAINT_ASSIGNED",
-      entity_type: "complaint",
-      entity_id: complaint.id,
-      metadata: { employee_id: assignEmployee, department_id: assignDept },
+      notes: `Assigned to employee with deadline ${assignDeadline || "none"}`,
     });
 
     setShowAssign(false);
-    setAssignNotes("");
-    setAssignEmployee("");
     setIsAssigning(false);
     await fetchData();
   };
@@ -132,23 +132,16 @@ export default function AdminComplaintDetailPage() {
     setIsChangingStatus(true);
     const supabase = createClient();
 
-    const updates: Record<string, unknown> = { status: newStatus };
-    if (newStatus === "RESOLVED") updates.resolved_at = new Date().toISOString();
+    const updateData: Record<string, any> = { status: newStatus };
+    if (newStatus === "RESOLVED") updateData.resolved_at = new Date().toISOString();
 
-    await supabase.from("complaints").update(updates).eq("id", complaint.id);
+    await supabase.from("complaints").update(updateData).eq("id", complaint.id);
     await supabase.from("status_history").insert({
       complaint_id: complaint.id,
       old_status: complaint.status,
       new_status: newStatus,
       changed_by: profile.id,
-      notes: statusNotes || `Status changed to ${getStatusLabel(newStatus)}`,
-    });
-    await supabase.from("audit_logs").insert({
-      actor_id: profile.id,
-      action: "STATUS_CHANGED",
-      entity_type: "complaint",
-      entity_id: complaint.id,
-      metadata: { old_status: complaint.status, new_status: newStatus },
+      notes: statusNotes || null,
     });
 
     setStatusNotes("");
@@ -156,36 +149,96 @@ export default function AdminComplaintDetailPage() {
     await fetchData();
   };
 
-  const handleReviewEvidence = async (approved: boolean) => {
-    if (!reviewingEvidence || !profile || !complaint) return;
+  const handleReviewEvidence = async (approved: boolean, customNotes?: string) => {
+    if (!reviewingEvidence || !complaint || !profile) return;
     setIsReviewing(true);
     const supabase = createClient();
 
+    const notesToSave = customNotes || reviewNotes;
+
+    // Update evidence
     await supabase.from("resolution_evidence").update({
       is_approved: approved,
-      reviewer_id: profile.id,
-      review_notes: reviewNotes || null,
+      reviewed_by: profile.id,
       reviewed_at: new Date().toISOString(),
+      review_notes: notesToSave || null,
     }).eq("id", reviewingEvidence.id);
 
-    const newStatus: ComplaintStatus = approved ? "RESOLVED" : "IN_PROGRESS";
-    await supabase.from("complaints").update({
-      status: newStatus,
-      ...(approved ? { resolved_at: new Date().toISOString() } : {}),
-    }).eq("id", complaint.id);
+    // If approved -> RESOLVED, else -> IN_PROGRESS
+    const newStatus = approved ? "RESOLVED" : "IN_PROGRESS";
+    const updateData: Record<string, any> = { status: newStatus };
+    if (approved) updateData.resolved_at = new Date().toISOString();
 
+    await supabase.from("complaints").update(updateData).eq("id", complaint.id);
     await supabase.from("status_history").insert({
       complaint_id: complaint.id,
       old_status: complaint.status,
       new_status: newStatus,
       changed_by: profile.id,
-      notes: approved ? `Resolution approved: ${reviewNotes || "Verified"}` : `Resolution rejected: ${reviewNotes || "Needs more work"}`,
+      notes: approved ? `Resolution approved: ${notesToSave || "Verified"}` : `Resolution rejected: ${notesToSave || "Needs more work"}`,
     });
 
     setReviewingEvidence(null);
     setReviewNotes("");
     setIsReviewing(false);
     await fetchData();
+  };
+
+  // Run AI Duplicate Scanner
+  const handleScanDuplicates = async () => {
+    if (!complaint) return;
+    setIsScanningDuplicates(true);
+    try {
+      const res = await fetch("/api/ai/check-duplicates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: complaint.title,
+          description: complaint.description,
+          category: complaint.category,
+          latitude: complaint.latitude,
+          longitude: complaint.longitude,
+          excludeId: complaint.id,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setDuplicateScanResult(data);
+        setShowDuplicateDialog(true);
+      }
+    } catch (err) {
+      console.warn("AI Duplicate scan failed:", err);
+    } finally {
+      setIsScanningDuplicates(false);
+    }
+  };
+
+  // Run AI Resolution Evidence Audit
+  const handleAuditEvidence = async (ev: ResolutionEvidence) => {
+    if (!complaint) return;
+    setAuditingEvidenceId(ev.id);
+    try {
+      const res = await fetch("/api/ai/verify-resolution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          complaintId: complaint.id,
+          beforePhotoUrls: complaint.photo_urls || [],
+          afterPhotoUrls: ev.photo_urls || [],
+          employeeNotes: ev.notes || "",
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setAiAudits((prev) => ({ ...prev, [ev.id]: data }));
+      }
+    } catch (err) {
+      console.warn("AI evidence audit failed:", err);
+    } finally {
+      setAuditingEvidenceId(null);
+    }
   };
 
   if (isLoading) return <LoadingSpinner />;
@@ -218,6 +271,18 @@ export default function AdminComplaintDetailPage() {
           <h1 className="text-xl font-bold text-slate-900">{complaint.title}</h1>
         </div>
         <div className="flex flex-wrap gap-2">
+          {/* AI Duplicate Scanner Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleScanDuplicates}
+            disabled={isScanningDuplicates}
+            className="gap-1.5 text-blue-700 border-blue-200 bg-blue-50/50 hover:bg-blue-100"
+          >
+            {isScanningDuplicates ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-blue-600" />}
+            AI Duplicate Scanner
+          </Button>
+
           <Button variant="primary" size="sm" onClick={() => { setAssignDept(complaint.department_id || ""); setShowAssign(true); }}>
             <UserCheck className="h-4 w-4" /> {complaint.assigned_employee_id ? "Reassign" : "Assign"}
           </Button>
@@ -241,48 +306,134 @@ export default function AdminComplaintDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Photos */}
+          {/* Original Complaint Photos */}
           {complaint.photo_urls?.length > 0 && (
             <Card>
-              <CardHeader><CardTitle className="text-base">Complaint Photos</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center justify-between">
+                  <span>Complaint Photos (BEFORE)</span>
+                  <Badge variant="default" className="text-[10px]">Citizen Evidence</Badge>
+                </CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {complaint.photo_urls.map((url, i) => (
-                    <img key={i} src={url} alt={`Photo ${i + 1}`} className="w-full h-32 object-cover rounded-lg border border-slate-200" />
+                    <div key={i} className="relative rounded-lg overflow-hidden border border-slate-200">
+                      <img src={url} alt={`Before ${i + 1}`} className="w-full h-32 object-cover" />
+                      <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded font-mono">
+                        BEFORE
+                      </span>
+                    </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Resolution evidence */}
+          {/* Resolution Evidence with AI Inspector */}
           {evidence.length > 0 && (
             <Card>
-              <CardHeader><CardTitle className="text-base">Resolution Evidence</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center justify-between">
+                  <span>Resolution Evidence (AFTER)</span>
+                  <Badge variant="primary" className="text-[10px]">Field Staff Submission</Badge>
+                </CardTitle>
+              </CardHeader>
               <CardContent className="space-y-4">
-                {evidence.map((ev) => (
-                  <div key={ev.id} className="border border-slate-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={ev.is_approved === true ? "success" : ev.is_approved === false ? "error" : "warning"}>
-                          {ev.is_approved === true ? "Approved" : ev.is_approved === false ? "Rejected" : "Pending Review"}
-                        </Badge>
-                        <span className="text-xs text-slate-400">{formatDate(ev.created_at)}</span>
+                {evidence.map((ev) => {
+                  const audit = aiAudits[ev.id];
+                  const isAuditing = auditingEvidenceId === ev.id;
+
+                  return (
+                    <div key={ev.id} className="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={ev.is_approved === true ? "success" : ev.is_approved === false ? "error" : "warning"}>
+                            {ev.is_approved === true ? "Approved" : ev.is_approved === false ? "Rejected" : "Pending Review"}
+                          </Badge>
+                          <span className="text-xs text-slate-400">{formatDate(ev.created_at)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAuditEvidence(ev)}
+                            disabled={isAuditing}
+                            className="gap-1 text-xs text-blue-700 border-blue-200 bg-blue-50/50 hover:bg-blue-100"
+                          >
+                            {isAuditing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-blue-600" />}
+                            {audit ? "Re-Audit with AI" : "AI Evidence Audit"}
+                          </Button>
+                          {ev.is_approved === null && (
+                            <Button size="sm" variant="outline" onClick={() => setReviewingEvidence(ev)}>
+                              Review
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      {ev.is_approved === null && (
-                        <Button size="sm" variant="outline" onClick={() => setReviewingEvidence(ev)}>Review</Button>
+
+                      <p className="text-sm text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                        {ev.notes}
+                      </p>
+
+                      {ev.photo_urls?.length > 0 && (
+                        <div className="flex gap-2">
+                          {ev.photo_urls.map((url, i) => (
+                            <div key={i} className="relative rounded-lg overflow-hidden border">
+                              <img src={url} alt={`Evidence ${i + 1}`} className="h-20 w-24 object-cover" />
+                              <span className="absolute bottom-1 left-1 bg-emerald-700 text-white text-[9px] px-1 py-0.5 rounded font-mono">
+                                AFTER
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* AI Verification Results Box */}
+                      {audit && (
+                        <div className={`p-3.5 rounded-lg border text-xs space-y-2 animate-in fade-in-0 ${
+                          audit.verdict === "VERIFIED_RESOLVED"
+                            ? "bg-emerald-50/80 border-emerald-200 text-emerald-950"
+                            : "bg-amber-50/80 border-amber-200 text-amber-950"
+                        }`}>
+                          <div className="flex items-center justify-between font-semibold">
+                            <span className="flex items-center gap-1.5">
+                              <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                              AI Audit Verdict: {audit.verdict.replace(/_/g, " ")}
+                            </span>
+                            <Badge variant={audit.confidenceScore >= 80 ? "success" : "warning"} className="text-[10px]">
+                              {audit.confidenceScore}% Confidence
+                            </Badge>
+                          </div>
+                          <p className="text-slate-700 leading-relaxed">{audit.summary}</p>
+                          {audit.keyObservations?.length > 0 && (
+                            <ul className="list-disc pl-4 space-y-0.5 text-slate-600">
+                              {audit.keyObservations.map((obs, idx) => (
+                                <li key={idx}>{obs}</li>
+                              ))}
+                            </ul>
+                          )}
+                          {ev.is_approved === null && (
+                            <div className="pt-1 flex justify-end">
+                              <Button
+                                size="sm"
+                                variant="success"
+                                onClick={() => {
+                                  setReviewingEvidence(ev);
+                                  handleReviewEvidence(true, `Approved based on AI audit (${audit.confidenceScore}% confidence). ${audit.summary}`);
+                                }}
+                                className="text-xs gap-1.5 h-8"
+                              >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Accept AI & One-Click Approve
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
-                    <p className="text-sm text-slate-700">{ev.notes}</p>
-                    {ev.photo_urls?.length > 0 && (
-                      <div className="flex gap-2 mt-3">
-                        {ev.photo_urls.map((url, i) => (
-                          <img key={i} src={url} alt={`Evidence ${i + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           )}
@@ -333,6 +484,75 @@ export default function AdminComplaintDetailPage() {
         </div>
       </div>
 
+      {/* AI Duplicate Scanner Dialog */}
+      <Dialog open={showDuplicateDialog} onClose={() => setShowDuplicateDialog(false)} className="max-w-xl">
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle>AI Duplicate Complaint Scanner</DialogTitle>
+              <DialogDescription>
+                Deep semantic & proximity scan across active municipal tickets.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-3 py-2 text-sm">
+          {duplicateScanResult && duplicateScanResult.potentialDuplicates.length === 0 ? (
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-center space-y-1">
+              <CheckCircle2 className="h-6 w-6 text-emerald-600 mx-auto" />
+              <p className="font-semibold">No Duplicates Found</p>
+              <p className="text-xs text-emerald-600">
+                This complaint is unique in category, coordinates, and description across the city.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Found {duplicateScanResult?.potentialDuplicates.length} Potential Match{(duplicateScanResult?.potentialDuplicates.length || 0) > 1 ? "es" : ""}:
+              </p>
+              {duplicateScanResult?.potentialDuplicates.map((dup) => (
+                <div key={dup.complaintId} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 hover:bg-slate-100/60 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-semibold text-blue-600">{dup.trackingId}</span>
+                    <Badge variant={dup.similarityScore >= 75 ? "error" : "warning"} className="text-[10px]">
+                      {dup.similarityScore}% Similarity
+                    </Badge>
+                  </div>
+                  <p className="font-semibold text-slate-900">{dup.title}</p>
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span className="flex items-center gap-1 font-medium text-amber-700">
+                      <MapPin className="h-3 w-3" />
+                      {dup.distanceMeters < 99999 ? `${dup.distanceMeters}m away` : "City-wide"}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7 gap-1"
+                      onClick={() => router.push(`/admin/complaints/${dup.complaintId}`)}
+                    >
+                      Inspect Ticket <ArrowRight className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-slate-600 bg-white p-2 rounded border border-slate-200/80">
+                    {dup.reason}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowDuplicateDialog(false)}>
+            Close Scanner
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
       {/* Assign dialog */}
       <Dialog open={showAssign} onClose={() => setShowAssign(false)}>
         <DialogHeader>
@@ -360,7 +580,6 @@ export default function AdminComplaintDetailPage() {
               onChange={(e) => {
                 const empId = e.target.value;
                 setAssignEmployee(empId);
-                // Auto-sync department with employee's department if available
                 const selectedEmp = employees.find((emp) => emp.id === empId);
                 if (selectedEmp?.department_id && !assignDept) {
                   setAssignDept(selectedEmp.department_id);
@@ -375,11 +594,6 @@ export default function AdminComplaintDetailPage() {
                 </option>
               ))}
             </select>
-            {employees.length === 0 && (
-              <p className="text-xs text-amber-600 mt-1">
-                No active employee accounts found. Ensure staff accounts have role set to &apos;employee&apos; in Supabase.
-              </p>
-            )}
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">Deadline (optional)</label>
