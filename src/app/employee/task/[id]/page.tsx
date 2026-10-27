@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { formatDate } from "@/lib/utils";
 import type { Complaint, StatusHistoryEntry, ResolutionEvidence } from "@/types";
+import { WorkerAIAssistant } from "@/components/ai/worker-ai-assistant";
 
 export default function EmployeeTaskDetailPage() {
   const params = useParams();
@@ -124,7 +125,7 @@ export default function EmployeeTaskDetailPage() {
       setPhotos([]);
       setPreviews([]);
       await fetchData();
-    } catch (err) {
+    } catch {
       setError("Failed to submit. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -158,6 +159,9 @@ export default function EmployeeTaskDetailPage() {
         <h1 className="text-xl font-bold text-slate-900">{complaint.title}</h1>
         <span className="text-xs font-mono text-slate-400">{complaint.tracking_id}</span>
       </div>
+
+      {/* AI Field Assistant */}
+      <WorkerAIAssistant complaintId={complaint.id} category={complaint.category} />
 
       {/* Details */}
       <Card>
