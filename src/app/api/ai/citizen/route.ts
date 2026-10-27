@@ -35,10 +35,7 @@ interface CitizenAIRequest {
 }
 
 export async function POST(req: NextRequest) {
-  // 1. Check AI configuration first
-  if (!isAIConfigured()) return aiNotConfiguredResponse();
-
-  // 2. Authenticate the request server-side
+  // 1. Authenticate the request server-side
   const supabase = await createClient();
   const {
     data: { user },

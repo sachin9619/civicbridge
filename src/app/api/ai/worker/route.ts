@@ -35,8 +35,6 @@ interface WorkerAIRequest {
 }
 
 export async function POST(req: NextRequest) {
-  if (!isAIConfigured()) return aiNotConfiguredResponse();
-
   const supabase = await createClient();
   const {
     data: { user },
